@@ -1,0 +1,147 @@
+package com.example.data.model
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import org.json.JSONArray
+import org.json.JSONObject
+
+@Entity(tableName = "habits")
+data class HabitEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val title: String,
+    val description: String = "",
+    val category: String = "Health", // Health, Mindfulness, Fitness, Productivity
+    val timeOfDay: String = "MORNING", // MORNING, AFTERNOON, EVENING, ANYTIME
+    val scheduledTime: String = "08:00", // "07:00", "08:00", etc.
+    val targetValue: Int = 1, // e.g. 3000 ml, 8000 steps, 1 task
+    val unit: String = "tasks", // ml, steps, tasks, mins, glasses
+    val iconName: String = "water", // water, walk, sun, moon, book, meditate, sparkle, trophy
+    val colorHex: String = "#7C3AED",
+    val routineGroup: String? = null, // e.g., "Happy Mornings"
+    val challengeId: String? = null,
+    val reminderEnabled: Boolean = true,
+    val reminderTime: String = "08:00",
+    val reminderDays: String = "1,2,3,4,5,6,7", // 1=Sun, 7=Sat
+    val syncWithGoogleCalendar: Boolean = false,
+    val calendarEventId: Long? = null,
+    val isArchived: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+@Entity(
+    tableName = "habit_logs",
+    indices = [
+        Index(value = ["habitId", "date"], unique = true),
+        Index(value = ["date"])
+    ]
+)
+data class HabitLogEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val habitId: Long,
+    val date: String, // "YYYY-MM-DD"
+    val progressValue: Int = 0,
+    val isCompleted: Boolean = false,
+    val completedAt: Long? = null,
+    val notes: String? = null
+)
+
+data class ChallengeTaskItem(
+    val title: String,
+    val description: String = "",
+    val timeOfDay: String = "MORNING",
+    val scheduledTime: String = "08:00",
+    val targetValue: Int = 1,
+    val unit: String = "tasks",
+    val iconName: String = "sparkle",
+    val reminderEnabled: Boolean = true,
+    val reminderTime: String = "08:00",
+    val syncWithGoogleCalendar: Boolean = true,
+    val tip: String = ""
+)
+
+@Entity(tableName = "challenges")
+data class ChallengeEntity(
+    @PrimaryKey
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val description: String = "",
+    val durationDays: Int = 7,
+    val currentDay: Int = 1,
+    val skipsLeft: Int = 1,
+    val isJoined: Boolean = false,
+    val category: String = "Mindfulness",
+    val bannerResName: String? = null,
+    val totalTasks: Int = 2,
+    val completedTasksToday: Int = 0,
+    val dailyTip: String = "",
+    val tasksJson: String = "",
+    val goalTarget: Float = 0f,
+    val goalCurrent: Float = 0f,
+    val goalUnit: String = ""
+) {
+    fun getParsedTasks(): List<ChallengeTaskItem> {
+        val list = mutableListOf<ChallengeTaskItem>()
+        if (tasksJson.isBlank()) return list
+        try {
+            val array = JSONArray(tasksJson)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    ChallengeTaskItem(
+                        title = obj.optString("title", "Task ${i + 1}"),
+                        description = obj.optString("description", ""),
+                        timeOfDay = obj.optString("timeOfDay", "MORNING"),
+                        scheduledTime = obj.optString("scheduledTime", "08:00"),
+                        targetValue = obj.optInt("targetValue", 1),
+                        unit = obj.optString("unit", "tasks"),
+                        iconName = obj.optString("iconName", "sparkle"),
+                        reminderEnabled = obj.optBoolean("reminderEnabled", true),
+                        reminderTime = obj.optString("reminderTime", "08:00"),
+                        syncWithGoogleCalendar = obj.optBoolean("syncWithGoogleCalendar", true),
+                        tip = obj.optString("tip", "")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+}
+
+@Entity(
+    tableName = "mood_logs",
+    indices = [Index(value = ["date"], unique = true)]
+)
+data class MoodLogEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val date: String, // YYYY-MM-DD
+    val moodScore: Int, // 5 = Great, 4 = Good, 3 = Okay, 2 = Meh, 1 = Bad
+    val moodLabel: String, // "Great", "Good", "Okay", "Meh", "Bad"
+    val note: String? = null
+)
+
+data class CalendarEventItem(
+    val id: Long,
+    val title: String,
+    val startTime: Long,
+    val endTime: Long,
+    val isAllDay: Boolean,
+    val description: String? = null,
+    val location: String? = null,
+    val color: Int? = null
+)
+
+// UI wrapper combining Habit and today's log
+data class HabitWithStatus(
+    val habit: HabitEntity,
+    val log: HabitLogEntity?,
+    val currentProgress: Int,
+    val isCompleted: Boolean,
+    val currentStreak: Int = 0
+)

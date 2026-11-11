@@ -1,0 +1,8 @@
+{
+  "name": "Sprout",
+  "description": "Habit tracker and daily planner with visual statistics, streaks, flexible reminders, challenges, and Google Calendar & Tasks sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
