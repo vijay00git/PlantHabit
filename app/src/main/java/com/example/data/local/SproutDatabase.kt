@@ -39,7 +39,9 @@ abstract class SproutDatabase : RoomDatabase() {
                     "sprout_habit_database"
                 )
                     .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
-                    .fallbackToDestructiveMigration()
+                    // Only the very first prototype schema (v1) may be rebuilt; every later
+                    // version must ship a Migration so user data is never silently wiped.
+                    .fallbackToDestructiveMigrationFrom(true, 1)
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
