@@ -4,13 +4,25 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.graphics.Color as AndroidColor
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -45,8 +57,8 @@ import com.example.ui.screens.PlanScreen
 import com.example.ui.screens.SettingsDialog
 import com.example.ui.screens.TemplateJsonDialog
 import com.example.ui.screens.TodayScreen
-import com.example.ui.theme.MyApplicationTheme
-import com.example.ui.theme.SproutBackgroundDark
+import com.example.ui.theme.PlantHabitTheme
+import com.example.ui.theme.PlantTheme
 import com.example.ui.viewmodel.BottomTab
 import com.example.ui.viewmodel.SproutViewModel
 import kotlinx.coroutines.launch
@@ -61,9 +73,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: SproutViewModel = viewModel()
             val themeMode by viewModel.themeMode.collectAsState()
-            val isDarkTheme = themeMode != "LIGHT"
 
-            MyApplicationTheme(darkTheme = isDarkTheme) {
+            PlantHabitTheme(themeMode = themeMode) {
+                // Keep status/nav bar icons readable when the in-app theme differs from the system's
+                val isDark = PlantTheme.colors.isDark
+                LaunchedEffect(isDark) {
+                    val style = if (isDark) SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+                    else SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
+                    enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+                }
                 SproutApp(viewModel = viewModel)
             }
         }
@@ -159,10 +177,15 @@ fun SproutApp(viewModel: SproutViewModel) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = PlantTheme.colors.background,
         contentWindowInsets = WindowInsets.statusBars,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
-            if (!isAnalyticsOpen && !isFocusModeOpen && selectedChallengeForDetails == null) {
+            AnimatedVisibility(
+                visible = !isAnalyticsOpen && !isFocusModeOpen && selectedChallengeForDetails == null,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut()
+            ) {
                 CustomBottomBar(
                     currentTab = currentTab,
                     onTabSelected = { viewModel.setCurrentTab(it) },
@@ -176,8 +199,19 @@ fun SproutApp(viewModel: SproutViewModel) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Main Tab Content
-            when (currentTab) {
+            // Main Tab Content — slides left/right following bottom-bar order
+            AnimatedContent(
+                targetState = currentTab,
+                transitionSpec = {
+                    val forward = targetState.ordinal > initialState.ordinal
+                    val dir = if (forward) 1 else -1
+                    (slideInHorizontally(tween(320)) { dir * it / 6 } + fadeIn(tween(260)))
+                        .togetherWith(slideOutHorizontally(tween(320)) { -dir * it / 6 } + fadeOut(tween(180)))
+                },
+                label = "tabContent",
+                modifier = Modifier.fillMaxSize()
+            ) { tab ->
+            when (tab) {
                 BottomTab.TODAY -> {
                     TodayScreen(
                         selectedDate = selectedDate,
@@ -289,6 +323,7 @@ fun SproutApp(viewModel: SproutViewModel) {
                     )
                 }
             }
+            }
 
             // Challenge Details Dialog (Popup showing tasks, habits, reminders before accept/reject)
             selectedChallengeForDetails?.let { challenge ->
@@ -333,7 +368,11 @@ fun SproutApp(viewModel: SproutViewModel) {
             }
 
             // Visual Analytics Overlay
-            if (isAnalyticsOpen) {
+            AnimatedVisibility(
+                visible = isAnalyticsOpen,
+                enter = slideInVertically(tween(380)) { it / 3 } + fadeIn(tween(300)),
+                exit = slideOutVertically(tween(260)) { it / 3 } + fadeOut(tween(220))
+            ) {
                 AnalyticsScreen(
                     analyticsData = analyticsData,
                     onClose = { viewModel.isAnalyticsOpen.value = false }

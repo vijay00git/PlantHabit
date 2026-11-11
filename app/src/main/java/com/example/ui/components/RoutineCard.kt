@@ -1,47 +1,49 @@
 package com.example.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MilitaryTech
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.model.HabitWithStatus
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreen
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutCardDark
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
 
 @Composable
 fun RoutineCard(
@@ -51,154 +53,214 @@ fun RoutineCard(
     onToggleHabit: (HabitWithStatus) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val c = PlantTheme.colors
     val completedCount = routineHabits.count { it.isCompleted }
     val totalCount = routineHabits.size.coerceAtLeast(1)
     val progress = (completedCount.toFloat() / totalCount).coerceIn(0f, 1f)
 
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(SproutCardDark)
-            .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-            .padding(18.dp)
+            .clip(AppShapes.large)
+            .background(c.card)
+            .border(1.dp, c.border, AppShapes.large)
             .testTag("routine_card_happy_mornings")
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            // Header: Image + Title + Medal
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.routine_morning),
-                        contentDescription = "Routine banner",
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
+        // Photo header with gradient scrim
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(132.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.routine_morning),
+                contentDescription = "Routine banner",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Black.copy(alpha = 0.05f),
+                            0.45f to Color.Black.copy(alpha = 0.2f),
+                            1f to Color.Black.copy(alpha = 0.72f)
+                        )
                     )
-                    Column {
-                        Text(
-                            text = title,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "$dayProgressText · $completedCount/$totalCount tasks done",
-                            fontSize = 12.sp,
-                            color = SproutAccentAmber,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+            )
 
-                // Medal with circular progress ring
-                Box(
-                    modifier = Modifier.size(38.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        progress = { 1f },
-                        modifier = Modifier.size(38.dp),
-                        color = Color(0xFF332D42),
-                        strokeWidth = 3.dp
-                    )
-                    CircularProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.size(38.dp),
-                        color = SproutAccentAmber,
-                        strokeWidth = 3.dp
-                    )
-                    Icon(
-                        imageVector = Icons.Default.MilitaryTech,
-                        contentDescription = "Challenge badge",
-                        tint = SproutAccentAmber,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+            // Medal with progress ring
+            ProgressRing(
+                progress = progress,
+                size = 44.dp,
+                strokeWidth = 4.dp,
+                colors = listOf(c.sun, c.sunrise),
+                trackColor = Color.White.copy(alpha = 0.25f),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MilitaryTech,
+                    contentDescription = "Challenge badge",
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp)
+                )
             }
 
-            // Routine tasks
-            routineHabits.forEach { habitWithStatus ->
-                val habit = habitWithStatus.habit
-                val isDone = habitWithStatus.isCompleted
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onToggleHabit(habitWithStatus) }
-                        .padding(vertical = 6.dp, horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Checkbox
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(if (isDone) SproutAccentAmber else Color.Transparent)
-                            .border(
-                                1.5.dp,
-                                if (isDone) SproutAccentAmber else Color(0xFF64748B),
-                                CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isDone) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "Done",
-                                tint = Color(0xFF1E1C28),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    // Habit Icon
-                    Icon(
-                        imageVector = if (habit.iconName == "alarm") Icons.Default.Alarm else Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = if (isDone) SproutAccentAmber else Color(0xFF94A3B8),
-                        modifier = Modifier.size(18.dp)
-                    )
-
-                    // Title
-                    Text(
-                        text = habit.title,
-                        fontSize = 14.sp,
-                        fontWeight = if (isDone) FontWeight.Normal else FontWeight.Medium,
-                        color = if (isDone) Color(0xFF94A3B8) else Color(0xFFF1F5F9),
-                        textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None
-                    )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    PhotoChip(text = dayProgressText)
+                    PhotoChip(text = "$completedCount/$totalCount tasks done")
                 }
+            }
+        }
+
+        // Routine tasks
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            routineHabits.forEach { habitWithStatus ->
+                RoutineTaskRow(
+                    habitWithStatus = habitWithStatus,
+                    onToggle = { onToggleHabit(habitWithStatus) }
+                )
             }
 
             // Social motivation indicator
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.padding(top = 2.dp)
+                modifier = Modifier.padding(start = 6.dp, top = 6.dp, bottom = 4.dp)
             ) {
                 Box(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(SproutAccentGreen)
+                        .background(c.primary)
                 )
                 Text(
                     text = "You and 81 others today",
-                    fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PhotoChip(text: String) {
+    Box(
+        modifier = Modifier
+            .clip(AppShapes.pill)
+            .background(Color.White.copy(alpha = 0.22f))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+private fun RoutineTaskRow(
+    habitWithStatus: HabitWithStatus,
+    onToggle: () -> Unit
+) {
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
+    val habit = habitWithStatus.habit
+    val isDone = habitWithStatus.isCompleted
+
+    val checkFill by animateColorAsState(
+        targetValue = if (isDone) c.sun else Color.Transparent,
+        animationSpec = tween(250),
+        label = "routine_check_fill"
+    )
+    val checkBorder by animateColorAsState(
+        targetValue = if (isDone) c.sun else c.textMuted,
+        animationSpec = tween(250),
+        label = "routine_check_border"
+    )
+    val checkScale by animateFloatAsState(
+        targetValue = if (isDone) 1f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "routine_check_scale"
+    )
+    val titleColor by animateColorAsState(
+        targetValue = if (isDone) c.textMuted else c.textPrimary,
+        animationSpec = tween(300),
+        label = "routine_title"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bounceClick(pressedScale = 0.98f, haptic = false) {
+                if (isDone) haptics.tick() else haptics.success()
+                onToggle()
+            }
+            .clip(AppShapes.small)
+            .padding(vertical = 8.dp, horizontal = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Checkbox
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(checkFill)
+                .border(1.5.dp, checkBorder, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = if (isDone) "Done" else null,
+                tint = c.onAccent,
+                modifier = Modifier
+                    .size(16.dp)
+                    .graphicsLayer {
+                        scaleX = checkScale
+                        scaleY = checkScale
+                        alpha = checkScale.coerceIn(0f, 1f)
+                    }
+            )
+        }
+
+        // Habit icon
+        IconBubble(background = if (isDone) c.sunSoft else c.cardMuted, size = 30.dp) {
+            Icon(
+                imageVector = if (habit.iconName == "alarm") Icons.Default.Alarm else Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = if (isDone) c.sun else c.textSecondary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        Text(
+            text = habit.title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = titleColor,
+            textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
     }
 }

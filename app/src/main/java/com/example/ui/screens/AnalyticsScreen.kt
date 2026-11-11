@@ -1,5 +1,13 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,41 +25,65 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Park
+import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material.icons.filled.Timeline
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.repository.AnalyticsData
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreen
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutBackgroundDark
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutCardDark
-import com.example.ui.theme.SproutPrimary
-import com.example.ui.theme.SproutPrimaryLight
+import com.example.data.repository.WeeklyStat
+import com.example.ui.components.AnimatedCounter
+import com.example.ui.components.IconBubble
+import com.example.ui.components.PlantCard
+import com.example.ui.components.ProgressRing
+import com.example.ui.components.bounceClick
+import com.example.ui.components.staggeredEntrance
+import com.example.ui.theme.AccentPair
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import com.example.ui.theme.backgroundGlow
+import com.example.ui.theme.categoryColors
+import com.example.ui.theme.heroGradient
+import com.example.ui.theme.sunriseGradient
+import kotlinx.coroutines.delay
 
 @Composable
 fun AnalyticsScreen(
@@ -59,6 +91,7 @@ fun AnalyticsScreen(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val c = PlantTheme.colors
     val data = analyticsData ?: AnalyticsData(
         totalHabits = 6,
         overallCompletionRate = 78,
@@ -74,495 +107,373 @@ fun AnalyticsScreen(
         moodTotalDays = 7
     )
 
-    LazyColumn(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(SproutBackgroundDark),
-        contentPadding = PaddingValues(bottom = 60.dp)
+            .background(c.background)
     ) {
-        // Top Header
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "Visual Statistics",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Consistency & Deep Habit Analytics",
-                        fontSize = 13.sp,
-                        color = Color(0xFF94A3B8)
-                    )
-                }
+        // Soft green wash behind the header
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp)
+                .background(c.backgroundGlow)
+        )
 
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF221E33))
-                        .testTag("btn_close_analytics")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-        }
-
-        // Hero Plant & Streak Card
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF1E1B2E),
-                                Color(0xFF2D1B4E)
-                            )
-                        )
-                    )
-                    .border(1.dp, SproutPrimaryLight.copy(alpha = 0.3f), RoundedCornerShape(26.dp))
-                    .padding(20.dp)
-            ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 60.dp)
+        ) {
+            // Top Header
+            item {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SproutPrimary.copy(alpha = 0.3f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "GARDEN STATUS",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SproutPrimaryLight,
-                                letterSpacing = 1.sp
-                            )
-                        }
-
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = data.currentPlantStage,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            text = "Visual Statistics",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = c.textPrimary
                         )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
-                                contentDescription = null,
-                                tint = SproutAccentAmber,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "${data.activeStreakDays} Days Active Streak",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = SproutAccentAmber
-                            )
-                        }
-
                         Text(
-                            text = "Best Streak: ${data.longestStreakDays} days • ${data.overallCompletionRate}% completion rate",
-                            fontSize = 12.sp,
-                            color = Color(0xFFCBD5E1)
+                            text = "Consistency & Deep Habit Analytics",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = c.textSecondary
                         )
                     }
 
-                    Image(
-                        painter = painterResource(id = R.drawable.sprout_launcher_icon),
-                        contentDescription = "Sprout plant",
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                    )
-                }
-            }
-        }
-
-        // Time Invested Breakdown (Screenshot 6: "37 h 42 min" category breakdown)
-        item {
-            val totalHours = data.totalTimeInvestedMinutes / 60
-            val totalMinutes = data.totalTimeInvestedMinutes % 60
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SproutCardDark)
-                    .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-                    .padding(20.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                tint = SproutPrimaryLight,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Text(
-                                text = "Time Invested",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        Text(
-                            text = "${totalHours} h ${totalMinutes} min",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SproutPrimaryLight
-                        )
-                    }
-
-                    Text(
-                        text = "12-Week Time Investment in Self-Growth",
-                        fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
-                    )
-
-                    // Breakdown bars
-                    data.timeInvestedBreakdown.forEach { (habitTitle, minutes) ->
-                        val itemHours = minutes / 60
-                        val itemMins = minutes % 60
-                        val ratio = (minutes.toFloat() / data.totalTimeInvestedMinutes.coerceAtLeast(1)).coerceIn(0f, 1f)
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = habitTitle,
-                                    fontSize = 13.sp,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = "${itemHours} h ${itemMins} min",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFFCBD5E1),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            LinearProgressIndicator(
-                                progress = { ratio },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(7.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = SproutPrimary,
-                                trackColor = Color(0xFF2E2A40)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Mood Balance & Trends (Screenshot 3: "85% Good or great" Ring Chart)
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SproutCardDark)
-                    .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-                    .padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
                     Box(
-                        modifier = Modifier.size(80.dp),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .bounceClick(pressedScale = 0.88f) { onClose() }
+                            .clip(CircleShape)
+                            .background(c.card)
+                            .border(1.dp, c.border, CircleShape)
+                            .testTag("btn_close_analytics"),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(
-                            progress = { 1f },
-                            modifier = Modifier.size(80.dp),
-                            color = Color(0xFF2D253E),
-                            strokeWidth = 8.dp
-                        )
-                        CircularProgressIndicator(
-                            progress = { data.moodGoodPercentage / 100f },
-                            modifier = Modifier.size(80.dp),
-                            color = SproutAccentGreenGlow,
-                            strokeWidth = 8.dp
-                        )
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "${data.moodGoodPercentage}%",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Mood,
-                                contentDescription = null,
-                                tint = SproutAccentGreenGlow,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "Mood Balance",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        Text(
-                            text = "${data.moodGoodPercentage}% Good or great",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SproutAccentGreenGlow
-                        )
-
-                        Text(
-                            text = "Based on daily check-ins over the past ${data.moodTotalDays} days",
-                            fontSize = 12.sp,
-                            color = Color(0xFF94A3B8)
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = c.textPrimary,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
             }
-        }
 
-        // Weekly Completion Chart
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SproutCardDark)
-                    .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-                    .padding(20.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "7-Day Velocity",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Target: 100%",
-                            fontSize = 12.sp,
-                            color = SproutAccentGreenGlow,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+            // Hero: plant growth stage & streak
+            item {
+                PlantGrowthHero(
+                    data = data,
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .staggeredEntrance(0)
+                )
+            }
 
-                    // Bar Chart
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(130.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        val days = if (data.weeklyStats.isNotEmpty()) data.weeklyStats else listOf(
-                            com.example.data.repository.WeeklyStat("Sun", "1", 0.7f, 4, 6),
-                            com.example.data.repository.WeeklyStat("Mon", "2", 0.85f, 5, 6),
-                            com.example.data.repository.WeeklyStat("Tue", "3", 1.0f, 6, 6),
-                            com.example.data.repository.WeeklyStat("Wed", "4", 0.5f, 3, 6),
-                            com.example.data.repository.WeeklyStat("Thu", "5", 0.85f, 5, 6),
-                            com.example.data.repository.WeeklyStat("Fri", "6", 1.0f, 6, 6),
-                            com.example.data.repository.WeeklyStat("Sat", "7", 0.65f, 4, 6)
-                        )
-
-                        days.forEach { stat ->
-                            val heightFraction = stat.completionRate.coerceIn(0.1f, 1f)
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Bottom,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = "${(stat.completionRate * 100).toInt()}%",
-                                    fontSize = 10.sp,
-                                    color = if (stat.completionRate >= 0.8f) SproutAccentGreenGlow else Color(0xFF94A3B8),
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
-
-                                Box(
+            // Stat tiles
+            item {
+                val tiles = listOf(
+                    StatTileSpec("Habits", data.totalHabits, "", Icons.Default.Spa, AccentPair(c.primary, c.primarySoft)),
+                    StatTileSpec("Check-ins", data.totalHabitsChecked, "", Icons.Default.CheckCircle, AccentPair(c.sky, c.skySoft)),
+                    StatTileSpec("Day streak", data.activeStreakDays, "", Icons.Default.LocalFireDepartment, AccentPair(c.sunrise, c.sunriseSoft)),
+                    StatTileSpec("Completion", data.overallCompletionRate, "%", Icons.Default.Percent, AccentPair(c.lavender, c.lavenderSoft)),
+                )
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    tiles.chunked(2).forEachIndexed { rowIndex, row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            row.forEachIndexed { colIndex, spec ->
+                                val index = rowIndex * 2 + colIndex
+                                StatTile(
+                                    spec = spec,
+                                    index = index,
                                     modifier = Modifier
-                                        .width(24.dp)
-                                        .height((100 * heightFraction).dp)
-                                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                                        .background(
-                                            if (stat.completionRate >= 0.8f) {
-                                                Brush.verticalGradient(listOf(SproutAccentGreenGlow, SproutAccentGreen))
-                                            } else {
-                                                Brush.verticalGradient(listOf(SproutPrimaryLight, SproutPrimary))
-                                            }
-                                        )
-                                )
-
-                                Text(
-                                    text = stat.dayLabel,
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF94A3B8),
-                                    modifier = Modifier.padding(top = 6.dp)
+                                        .weight(1f)
+                                        .staggeredEntrance(index + 1)
                                 )
                             }
                         }
                     }
                 }
             }
-        }
 
-        // Category Breakdown
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SproutCardDark)
-                    .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-                    .padding(20.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(
-                        text = "Consistency by Category",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+            // Time Invested Breakdown
+            item {
+                val totalHours = data.totalTimeInvestedMinutes / 60
+                val totalMinutes = data.totalTimeInvestedMinutes % 60
+                val accents = listOf(
+                    AccentPair(c.primary, c.primarySoft),
+                    AccentPair(c.sky, c.skySoft),
+                    AccentPair(c.sunrise, c.sunriseSoft),
+                    AccentPair(c.lavender, c.lavenderSoft),
+                    AccentPair(c.sun, c.sunSoft),
+                    AccentPair(c.berry, c.berrySoft),
+                )
+                val reveal = rememberDrawIn(durationMs = 900, delayMs = 120)
+                val shownHours = rememberCountUp(totalHours)
+                val shownMinutes = rememberCountUp(totalMinutes)
 
-                    val categories = listOf(
-                        Triple("Health", 0.85f, SproutAccentAmber),
-                        Triple("Mindfulness", 0.70f, SproutPrimaryLight),
-                        Triple("Fitness", 0.90f, SproutAccentGreenGlow),
-                        Triple("Productivity", 0.60f, Color(0xFF38BDF8))
-                    )
+                AnalyticsCard(index = 5) {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        CardHeader(
+                            icon = Icons.Default.Schedule,
+                            accent = AccentPair(c.sky, c.skySoft),
+                            title = "Time Invested"
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AnimatedCounter(
+                                    value = shownHours,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = c.sky,
+                                    suffix = " h "
+                                )
+                                AnimatedCounter(
+                                    value = shownMinutes,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = c.sky,
+                                    suffix = " min"
+                                )
+                            }
+                        }
 
-                    categories.forEach { (category, ratio, color) ->
+                        Text(
+                            text = "12-Week Time Investment in Self-Growth",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.textSecondary
+                        )
+
+                        val breakdown = data.timeInvestedBreakdown
+                        breakdown.forEachIndexed { i, (habitTitle, minutes) ->
+                            val itemHours = minutes / 60
+                            val itemMins = minutes % 60
+                            val ratio = (minutes.toFloat() / data.totalTimeInvestedMinutes.coerceAtLeast(1)).coerceIn(0f, 1f)
+                            val accent = accents[i % accents.size]
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(accent.color)
+                                        )
+                                        Text(
+                                            text = habitTitle,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = c.textPrimary
+                                        )
+                                    }
+                                    Text(
+                                        text = "$itemHours h $itemMins min",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = c.textSecondary
+                                    )
+                                }
+                                GradientBar(
+                                    fraction = ratio * staggered(reveal, i, breakdown.size),
+                                    color = accent.color,
+                                    trackColor = c.cardMuted,
+                                    height = 8.dp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Mood Balance & Trends
+            item {
+                var moodTarget by remember { mutableFloatStateOf(0f) }
+                LaunchedEffect(data.moodGoodPercentage) {
+                    delay(200)
+                    moodTarget = data.moodGoodPercentage / 100f
+                }
+                val shownMood = rememberCountUp(data.moodGoodPercentage)
+
+                AnalyticsCard(index = 6) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        ProgressRing(
+                            progress = moodTarget,
+                            size = 84.dp,
+                            strokeWidth = 9.dp,
+                            colors = listOf(c.sun, c.primary)
+                        ) {
+                            AnimatedCounter(
+                                value = shownMood,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = c.textPrimary,
+                                suffix = "%"
+                            )
+                        }
+
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(
-                                    text = category,
-                                    fontSize = 13.sp,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Medium
+                                Icon(
+                                    imageVector = Icons.Default.Mood,
+                                    contentDescription = null,
+                                    tint = c.sun,
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = "${(ratio * 100).toInt()}%",
-                                    fontSize = 12.sp,
-                                    color = color,
-                                    fontWeight = FontWeight.Bold
+                                    text = "Mood Balance",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = c.textPrimary
                                 )
                             }
 
-                            LinearProgressIndicator(
-                                progress = { ratio },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = color,
-                                trackColor = Color(0xFF2E2A40)
+                            Text(
+                                text = "${data.moodGoodPercentage}% Good or great",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = c.primary
+                            )
+
+                            Text(
+                                text = "Based on daily check-ins over the past ${data.moodTotalDays} days",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = c.textSecondary
                             )
                         }
                     }
                 }
             }
-        }
 
-        // Habit Milestones
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SproutCardDark)
-                    .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-                    .padding(20.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.EmojiEvents,
-                            contentDescription = null,
-                            tint = SproutAccentAmber,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Streak Milestones",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+            // Weekly Completion Chart
+            item {
+                val days = if (data.weeklyStats.isNotEmpty()) data.weeklyStats else listOf(
+                    WeeklyStat("Sun", "1", 0.7f, 4, 6),
+                    WeeklyStat("Mon", "2", 0.85f, 5, 6),
+                    WeeklyStat("Tue", "3", 1.0f, 6, 6),
+                    WeeklyStat("Wed", "4", 0.5f, 3, 6),
+                    WeeklyStat("Thu", "5", 0.85f, 5, 6),
+                    WeeklyStat("Fri", "6", 1.0f, 6, 6),
+                    WeeklyStat("Sat", "7", 0.65f, 4, 6)
+                )
+
+                AnalyticsCard(index = 7) {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        CardHeader(
+                            icon = Icons.Default.Timeline,
+                            accent = AccentPair(c.primary, c.primarySoft),
+                            title = "7-Day Velocity"
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(AppShapes.pill)
+                                    .background(c.primarySoft)
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Target: 100%",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = c.primary
+                                )
+                            }
+                        }
+
+                        WeeklyVelocityChart(days = days)
                     }
+                }
+            }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        MilestoneBadge(title = "3 Days", subtitle = "Spark", isUnlocked = true)
-                        MilestoneBadge(title = "7 Days", subtitle = "Sprout", isUnlocked = data.activeStreakDays >= 7)
-                        MilestoneBadge(title = "14 Days", subtitle = "Bloom", isUnlocked = data.activeStreakDays >= 14)
-                        MilestoneBadge(title = "30 Days", subtitle = "Tree", isUnlocked = data.activeStreakDays >= 30)
+            // Category Breakdown
+            item {
+                val categories = listOf(
+                    "Health" to 0.85f,
+                    "Mindfulness" to 0.70f,
+                    "Fitness" to 0.90f,
+                    "Productivity" to 0.60f
+                )
+                val reveal = rememberDrawIn(durationMs = 900, delayMs = 120)
+
+                AnalyticsCard(index = 8) {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        CardHeader(
+                            icon = Icons.Default.Insights,
+                            accent = AccentPair(c.lavender, c.lavenderSoft),
+                            title = "Consistency by Category"
+                        )
+
+                        categories.forEachIndexed { i, (category, ratio) ->
+                            val accent = c.categoryColors(category)
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(AppShapes.pill)
+                                            .background(accent.soft)
+                                            .padding(horizontal = 10.dp, vertical = 3.dp)
+                                    ) {
+                                        Text(
+                                            text = category,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = accent.color
+                                        )
+                                    }
+                                    Text(
+                                        text = "${(ratio * 100).toInt()}%",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = accent.color
+                                    )
+                                }
+
+                                GradientBar(
+                                    fraction = ratio * staggered(reveal, i, categories.size),
+                                    color = accent.color,
+                                    trackColor = c.cardMuted,
+                                    height = 10.dp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Habit Milestones
+            item {
+                AnalyticsCard(index = 9) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        CardHeader(
+                            icon = Icons.Default.EmojiEvents,
+                            accent = AccentPair(c.sun, c.sunSoft),
+                            title = "Streak Milestones"
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            MilestoneBadge(title = "3 Days", subtitle = "Spark", isUnlocked = true, index = 0)
+                            MilestoneBadge(title = "7 Days", subtitle = "Sprout", isUnlocked = data.activeStreakDays >= 7, index = 1)
+                            MilestoneBadge(title = "14 Days", subtitle = "Bloom", isUnlocked = data.activeStreakDays >= 14, index = 2)
+                            MilestoneBadge(title = "30 Days", subtitle = "Tree", isUnlocked = data.activeStreakDays >= 30, index = 3)
+                        }
                     }
                 }
             }
@@ -570,45 +481,507 @@ fun AnalyticsScreen(
     }
 }
 
+/* ------------------------------------------------------------------------------------------ */
+/* Animation helpers                                                                            */
+/* ------------------------------------------------------------------------------------------ */
+
+/** 0 → 1 draw-in progress that plays once when the composable first appears. */
+@Composable
+private fun rememberDrawIn(durationMs: Int = 900, delayMs: Long = 0L): Float {
+    val anim = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(delayMs)
+        anim.animateTo(1f, tween(durationMs, easing = FastOutSlowInEasing))
+    }
+    return anim.value
+}
+
+/** Starts at 0 and jumps to [target] after a beat so [AnimatedCounter] rolls up on first show. */
+@Composable
+private fun rememberCountUp(target: Int, delayMs: Long = 180L): Int {
+    var shown by remember { mutableIntStateOf(0) }
+    LaunchedEffect(target) {
+        delay(delayMs)
+        shown = target
+    }
+    return shown
+}
+
+/** Per-item progress for a staggered reveal: item [index] of [count] starts a little after the previous. */
+private fun staggered(progress: Float, index: Int, count: Int, step: Float = 0.12f): Float {
+    val span = 1f + step * (count - 1).coerceAtLeast(0)
+    val local = (progress * span - index * step).coerceIn(0f, 1f)
+    return FastOutSlowInEasing.transform(local)
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Building blocks                                                                              */
+/* ------------------------------------------------------------------------------------------ */
+
+@Composable
+private fun AnalyticsCard(
+    index: Int,
+    content: @Composable () -> Unit
+) {
+    PlantCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .staggeredEntrance(index),
+        contentPadding = 20.dp
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun CardHeader(
+    icon: ImageVector,
+    accent: AccentPair,
+    title: String,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    val c = PlantTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            IconBubble(background = accent.soft, size = 36.dp) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accent.color,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = c.textPrimary
+            )
+        }
+        trailing?.invoke()
+    }
+}
+
+/** Rounded horizontal bar with a soft-to-solid gradient fill. [fraction] is already animated. */
+@Composable
+private fun GradientBar(
+    fraction: Float,
+    color: Color,
+    trackColor: Color,
+    height: androidx.compose.ui.unit.Dp
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(AppShapes.pill)
+            .background(trackColor)
+    ) {
+        if (fraction > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                    .height(height)
+                    .clip(AppShapes.pill)
+                    .background(Brush.horizontalGradient(listOf(color.copy(alpha = 0.55f), color)))
+            )
+        }
+    }
+}
+
+private data class StatTileSpec(
+    val label: String,
+    val value: Int,
+    val suffix: String,
+    val icon: ImageVector,
+    val accent: AccentPair
+)
+
+@Composable
+private fun StatTile(
+    spec: StatTileSpec,
+    index: Int,
+    modifier: Modifier = Modifier
+) {
+    val c = PlantTheme.colors
+    val shown = rememberCountUp(spec.value, delayMs = 220L + index * 70L)
+    Column(
+        modifier = modifier
+            .clip(AppShapes.large)
+            .background(spec.accent.soft)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        IconBubble(background = c.card, size = 38.dp) {
+            Icon(
+                imageVector = spec.icon,
+                contentDescription = null,
+                tint = spec.accent.color,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        AnimatedCounter(
+            value = shown,
+            style = MaterialTheme.typography.headlineSmall,
+            color = c.textPrimary,
+            suffix = spec.suffix
+        )
+        Text(
+            text = spec.label,
+            style = MaterialTheme.typography.labelMedium,
+            color = spec.accent.color
+        )
+    }
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Plant growth hero                                                                            */
+/* ------------------------------------------------------------------------------------------ */
+
+private data class GrowthStage(val name: String, val minDays: Int)
+
+private val growthStages = listOf(
+    GrowthStage("Seedling", 0),
+    GrowthStage("Thriving Sprout", 3),
+    GrowthStage("Blooming Sprout", 7),
+    GrowthStage("Flourishing Plant", 14),
+    GrowthStage("Golden Tree", 30),
+)
+
+@Composable
+private fun PlantGrowthHero(
+    data: AnalyticsData,
+    modifier: Modifier = Modifier
+) {
+    val c = PlantTheme.colors
+    val onHero = c.onPrimary
+
+    val streak = data.activeStreakDays
+    val currentIndex = growthStages.indexOfLast { streak >= it.minDays }.coerceAtLeast(0)
+    val next = growthStages.getOrNull(currentIndex + 1)
+    val stageProgress = if (next == null) 1f else {
+        val from = growthStages[currentIndex].minDays
+        ((streak - from).toFloat() / (next.minDays - from).coerceAtLeast(1)).coerceIn(0f, 1f)
+    }
+    val reveal = rememberDrawIn(durationMs = 1000, delayMs = 250)
+
+    val sway = rememberInfiniteTransition(label = "plantSway")
+    val angle by sway.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "plantSwayAngle"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(AppShapes.xl)
+            .background(c.heroGradient)
+            .padding(20.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(AppShapes.pill)
+                            .background(onHero.copy(alpha = 0.16f))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "GARDEN STATUS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = onHero
+                        )
+                    }
+
+                    Text(
+                        text = data.currentPlantStage,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = onHero
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = c.sun,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "${data.activeStreakDays} Days Active Streak",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = onHero
+                        )
+                    }
+
+                    Text(
+                        text = "Best Streak: ${data.longestStreakDays} days • ${data.overallCompletionRate}% completion rate",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = onHero.copy(alpha = 0.85f)
+                    )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(92.dp)
+                        .clip(CircleShape)
+                        .background(onHero.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.sprout_launcher_icon),
+                        contentDescription = "Sprout plant",
+                        modifier = Modifier
+                            .size(72.dp)
+                            .graphicsLayer {
+                                rotationZ = angle
+                                transformOrigin = TransformOrigin(0.5f, 1f)
+                            }
+                            .clip(AppShapes.medium)
+                    )
+                }
+            }
+
+            // Growth progress towards the next stage
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(AppShapes.pill)
+                        .background(onHero.copy(alpha = 0.18f))
+                ) {
+                    val shown = stageProgress * reveal
+                    if (shown > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(shown)
+                                .height(8.dp)
+                                .clip(AppShapes.pill)
+                                .background(c.sunriseGradient)
+                        )
+                    }
+                }
+                Text(
+                    text = if (next == null) "Fully grown — your garden is thriving 🌳"
+                    else "${(next.minDays - streak).coerceAtLeast(0)} more days to ${next.name}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = onHero.copy(alpha = 0.9f)
+                )
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Weekly chart                                                                                 */
+/* ------------------------------------------------------------------------------------------ */
+
+@Composable
+private fun WeeklyVelocityChart(days: List<WeeklyStat>) {
+    val c = PlantTheme.colors
+    val reveal = rememberDrawIn(durationMs = 1100, delayMs = 150)
+
+    // Capture theme colours outside of DrawScope.
+    val highTop = c.primary
+    val highBottom = c.primaryDeep
+    val lowTop = c.sun
+    val lowBottom = c.sunrise
+    val lineColor = c.sky
+    val dotFill = c.card
+    val count = days.size
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Percent labels
+        Row(modifier = Modifier.fillMaxWidth()) {
+            days.forEachIndexed { i, stat ->
+                Text(
+                    text = "${(stat.completionRate * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (stat.completionRate >= 0.8f) c.primary else c.textSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                        .graphicsLayer { alpha = staggered(reveal, i, count) }
+                )
+            }
+        }
+
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+        ) {
+            if (count == 0) return@Canvas
+            val slot = size.width / count
+            val barWidth = minOf(slot * 0.5f, 26.dp.toPx())
+            val topPad = 6.dp.toPx()
+            val maxH = size.height - topPad
+            val fractions = days.map { it.completionRate.coerceIn(0.06f, 1f) }
+
+            // Soft area + trend line (rises with reveal)
+            val points = fractions.mapIndexed { i, f ->
+                Offset(slot * (i + 0.5f), size.height - maxH * f * reveal)
+            }
+            fun Path.smoothThrough(pts: List<Offset>) {
+                for (i in 1 until pts.size) {
+                    val prev = pts[i - 1]
+                    val cur = pts[i]
+                    val midX = (prev.x + cur.x) / 2f
+                    cubicTo(midX, prev.y, midX, cur.y, cur.x, cur.y)
+                }
+            }
+            val line = Path().apply {
+                moveTo(points.first().x, points.first().y)
+                smoothThrough(points)
+            }
+            val area = Path().apply {
+                moveTo(points.first().x, points.first().y)
+                smoothThrough(points)
+                lineTo(points.last().x, size.height)
+                lineTo(points.first().x, size.height)
+                close()
+            }
+            clipRect(right = size.width * reveal.coerceAtLeast(0.001f)) {
+                drawPath(
+                    path = area,
+                    brush = Brush.verticalGradient(
+                        colors = listOf(lineColor.copy(alpha = 0.28f), lineColor.copy(alpha = 0f)),
+                        startY = 0f,
+                        endY = size.height
+                    )
+                )
+            }
+
+            // Gradient bars, staggered
+            fractions.forEachIndexed { i, f ->
+                val t = staggered(reveal, i, count)
+                if (t <= 0f) return@forEachIndexed
+                val h = maxH * f * t
+                val left = slot * (i + 0.5f) - barWidth / 2f
+                val top = size.height - h
+                val high = days[i].completionRate >= 0.8f
+                drawRoundRect(
+                    brush = Brush.verticalGradient(
+                        colors = if (high) listOf(highTop, highBottom) else listOf(lowTop, lowBottom),
+                        startY = top,
+                        endY = size.height
+                    ),
+                    topLeft = Offset(left, top),
+                    size = Size(barWidth, h),
+                    cornerRadius = CornerRadius(barWidth / 2.6f, barWidth / 2.6f)
+                )
+            }
+
+            // Trend line on top
+            clipRect(right = size.width * reveal.coerceAtLeast(0.001f)) {
+                drawPath(
+                    path = line,
+                    color = lineColor.copy(alpha = 0.9f),
+                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+                )
+            }
+            points.forEachIndexed { i, p ->
+                val t = staggered(reveal, i, count)
+                if (t <= 0f) return@forEachIndexed
+                drawCircle(color = dotFill, radius = 4.dp.toPx() * t, center = p)
+                drawCircle(
+                    color = lineColor,
+                    radius = 4.dp.toPx() * t,
+                    center = p,
+                    style = Stroke(width = 2.dp.toPx())
+                )
+            }
+        }
+
+        // Day labels
+        Row(modifier = Modifier.fillMaxWidth()) {
+            days.forEach { stat ->
+                Text(
+                    text = stat.dayLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = c.textSecondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Milestones                                                                                   */
+/* ------------------------------------------------------------------------------------------ */
+
 @Composable
 private fun MilestoneBadge(
     title: String,
     subtitle: String,
-    isUnlocked: Boolean
+    isUnlocked: Boolean,
+    index: Int = 0
 ) {
+    val c = PlantTheme.colors
+    val pop = rememberDrawIn(durationMs = 500, delayMs = 200L + index * 90L)
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(50.dp)
+                .size(56.dp)
+                .graphicsLayer {
+                    val s = 0.6f + 0.4f * pop
+                    scaleX = s
+                    scaleY = s
+                    alpha = pop
+                }
                 .clip(CircleShape)
-                .background(if (isUnlocked) SproutAccentAmber.copy(alpha = 0.2f) else Color(0xFF221E33))
-                .border(
-                    1.dp,
-                    if (isUnlocked) SproutAccentAmber else Color(0xFF3B3550),
-                    CircleShape
+                .then(
+                    if (isUnlocked) Modifier.background(c.sunriseGradient)
+                    else Modifier
+                        .background(c.cardMuted)
+                        .border(1.dp, c.border, CircleShape)
                 ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (isUnlocked) Icons.Default.Park else Icons.Default.EmojiEvents,
+                imageVector = if (isUnlocked) Icons.Default.Park else Icons.Default.Lock,
                 contentDescription = null,
-                tint = if (isUnlocked) SproutAccentAmber else Color(0xFF64748B),
-                modifier = Modifier.size(24.dp)
+                tint = if (isUnlocked) c.onAccent else c.textMuted,
+                modifier = Modifier.size(if (isUnlocked) 26.dp else 20.dp)
             )
         }
         Text(
             text = title,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isUnlocked) Color.White else Color(0xFF94A3B8)
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isUnlocked) c.textPrimary else c.textMuted
         )
         Text(
             text = subtitle,
-            fontSize = 10.sp,
-            color = if (isUnlocked) SproutAccentAmber else Color(0xFF64748B)
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isUnlocked) c.sunrise else c.textMuted
         )
     }
 }

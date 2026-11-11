@@ -1,40 +1,43 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreen
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutCardDark
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import com.example.ui.theme.leafGradient
+import com.example.ui.theme.sunriseGradient
 
 @Composable
 fun PlantStreakCard(
@@ -43,105 +46,129 @@ fun PlantStreakCard(
     activeStreakDays: Int,
     modifier: Modifier = Modifier
 ) {
+    val c = PlantTheme.colors
+
     val progressRatio = if (totalCount > 0) (completedCount.toFloat() / totalCount).coerceIn(0f, 1f) else 0f
     val animatedProgress by animateFloatAsState(
         targetValue = progressRatio,
-        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessLow),
         label = "plant_progress"
     )
-    val percentage = (progressRatio * 100).toInt()
     val remaining = (totalCount - completedCount).coerceAtLeast(0)
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(SproutCardDark)
-            .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-            .padding(20.dp)
-    ) {
+    // Plant grows with the streak (caps at 30 days) and sways gently in the breeze.
+    val growth = (activeStreakDays.coerceIn(0, 30) / 30f)
+    val plantSize by animateDpAsState(
+        targetValue = 44.dp + 28.dp * growth,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "plant_size"
+    )
+    val breeze = rememberInfiniteTransition(label = "plant_breeze")
+    val sway by breeze.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "plant_sway"
+    )
+
+    val stage = when {
+        activeStreakDays <= 0 -> "Seed"
+        activeStreakDays < 3 -> "Sprout"
+        activeStreakDays < 7 -> "Seedling"
+        activeStreakDays < 21 -> "Sapling"
+        else -> "Blooming"
+    }
+
+    PlantCard(modifier = modifier.fillMaxWidth(), contentPadding = 18.dp) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Circular Progress on Left
-            Box(
-                modifier = Modifier.size(76.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                // Background Track
-                CircularProgressIndicator(
-                    progress = { 1f },
-                    modifier = Modifier.size(76.dp),
-                    color = Color(0xFF332D42),
-                    strokeWidth = 7.dp,
-                    strokeCap = StrokeCap.Round
-                )
-                // Progress Arc
-                CircularProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier = Modifier.size(76.dp),
-                    color = if (percentage == 100) SproutAccentGreenGlow else SproutAccentAmber,
-                    strokeWidth = 7.dp,
-                    strokeCap = StrokeCap.Round
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "$completedCount/$totalCount",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "DONE",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8)
-                    )
-                }
-            }
-
-            // Streak Message in Middle
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = "$percentage% there.",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = if (remaining > 0) "$remaining more to keep the streak alive." else "Streak secured for today! 🔥",
-                    fontSize = 13.sp,
-                    color = Color(0xFFCBD5E1)
-                )
-                Text(
-                    text = if (activeStreakDays > 0) "$activeStreakDays day streak • Sprout thriving 🌱" else "Plant a streak to grow.",
-                    fontSize = 12.sp,
-                    color = SproutAccentGreenGlow,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            // Plant in Pot Image on Right
+            // Plant pot
             Box(
                 modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF161421)),
-                contentAlignment = Alignment.Center
+                    .size(84.dp)
+                    .clip(AppShapes.large)
+                    .background(c.primarySoft),
+                contentAlignment = Alignment.BottomCenter
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.sprout_launcher_icon),
                     contentDescription = "Sprout streak plant",
-                    modifier = Modifier.size(56.dp),
+                    modifier = Modifier
+                        .padding(bottom = 6.dp)
+                        .size(plantSize)
+                        .graphicsLayer {
+                            rotationZ = sway
+                            transformOrigin = TransformOrigin(0.5f, 1f)
+                        }
+                        .clip(AppShapes.medium),
                     contentScale = ContentScale.Crop
                 )
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Streak badge on a sunrise gradient
+                Row(
+                    modifier = Modifier
+                        .clip(AppShapes.pill)
+                        .background(c.sunriseGradient)
+                        .padding(horizontal = 12.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(text = "🔥", style = MaterialTheme.typography.labelLarge)
+                    AnimatedCounter(
+                        value = activeStreakDays,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = c.onAccent
+                    )
+                    Text(
+                        text = "day streak",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = c.onAccent
+                    )
+                }
+
+                Text(
+                    text = if (activeStreakDays > 0) "$stage · your plant is thriving 🌱" else "Plant a streak to grow 🌱",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = c.textPrimary
+                )
+                Text(
+                    text = when {
+                        totalCount == 0 -> "Add a habit to start growing."
+                        remaining > 0 -> "$remaining more to keep the streak alive."
+                        else -> "Streak secured for today! 🔥"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary
+                )
+
+                // Animated growth bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(AppShapes.pill)
+                        .background(c.cardMuted)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(animatedProgress)
+                            .clip(AppShapes.pill)
+                            .background(c.leafGradient)
+                    )
+                }
             }
         }
     }

@@ -1,62 +1,96 @@
 package com.example.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.unit.dp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = SproutPrimaryLight,
-    onPrimary = Color.White,
-    primaryContainer = SproutPrimaryContainer,
-    onPrimaryContainer = Color(0xFFE9D5FF),
-    secondary = SproutAccentGreenGlow,
-    onSecondary = Color(0xFF052E16),
-    secondaryContainer = Color(0xFF14532D),
-    onSecondaryContainer = Color(0xFFBBF7D0),
-    tertiary = SproutAccentAmber,
-    onTertiary = Color(0xFF451A03),
-    background = SproutBackgroundDark,
-    onBackground = SproutTextPrimaryDark,
-    surface = SproutSurfaceDark,
-    onSurface = SproutTextPrimaryDark,
-    surfaceVariant = SproutSurfaceVariantDark,
-    onSurfaceVariant = SproutTextSecondaryDark,
-    outline = SproutCardBorderDark
-)
+private fun AppColors.toMaterialScheme() = if (isDark) {
+    darkColorScheme(
+        primary = primary, onPrimary = onPrimary,
+        primaryContainer = primarySoft, onPrimaryContainer = primary,
+        secondary = sunrise, onSecondary = onAccent,
+        secondaryContainer = sunriseSoft, onSecondaryContainer = sunrise,
+        tertiary = sky, onTertiary = onAccent,
+        tertiaryContainer = skySoft, onTertiaryContainer = sky,
+        error = berry, onError = onAccent,
+        errorContainer = berrySoft, onErrorContainer = berry,
+        background = background, onBackground = textPrimary,
+        surface = surface, onSurface = textPrimary,
+        surfaceVariant = cardMuted, onSurfaceVariant = textSecondary,
+        surfaceContainer = card, surfaceContainerHigh = cardMuted,
+        outline = border, outlineVariant = divider,
+        scrim = scrim,
+        inverseSurface = textPrimary, inverseOnSurface = background,
+    )
+} else {
+    lightColorScheme(
+        primary = primary, onPrimary = onPrimary,
+        primaryContainer = primarySoft, onPrimaryContainer = primaryDeep,
+        secondary = sunrise, onSecondary = onAccent,
+        secondaryContainer = sunriseSoft, onSecondaryContainer = sunrise,
+        tertiary = sky, onTertiary = onAccent,
+        tertiaryContainer = skySoft, onTertiaryContainer = sky,
+        error = berry, onError = onAccent,
+        errorContainer = berrySoft, onErrorContainer = berry,
+        background = background, onBackground = textPrimary,
+        surface = surface, onSurface = textPrimary,
+        surfaceVariant = cardMuted, onSurfaceVariant = textSecondary,
+        surfaceContainer = card, surfaceContainerHigh = cardMuted,
+        outline = border, outlineVariant = divider,
+        scrim = scrim,
+        inverseSurface = textPrimary, inverseOnSurface = background,
+    )
+}
 
-private val LightColorScheme = lightColorScheme(
-    primary = SproutPrimary,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFEDE9FE),
-    onPrimaryContainer = Color(0xFF4C1D95),
-    secondary = SproutAccentGreen,
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFDCFCE7),
-    onSecondaryContainer = Color(0xFF14532D),
-    tertiary = SproutAccentAmber,
-    onTertiary = Color.White,
-    background = SproutBackgroundLight,
-    onBackground = SproutTextPrimaryLight,
-    surface = SproutSurfaceLight,
-    onSurface = SproutTextPrimaryLight,
-    surfaceVariant = SproutCardLight,
-    onSurfaceVariant = SproutTextSecondaryLight,
-    outline = SproutCardBorderLight
-)
+/** Rounded, friendly corner scale. Prefer these over ad-hoc RoundedCornerShape values. */
+object AppShapes {
+    val small = RoundedCornerShape(12.dp)
+    val medium = RoundedCornerShape(18.dp)
+    val large = RoundedCornerShape(24.dp)
+    val xl = RoundedCornerShape(32.dp)
+    val pill = RoundedCornerShape(percent = 50)
+}
 
+/** Accessor for PlantHabit design tokens: `PlantTheme.colors.primary`. */
+object PlantTheme {
+    val colors: AppColors
+        @Composable @ReadOnlyComposable get() = LocalAppColors.current
+}
+
+/**
+ * @param themeMode "LIGHT", "DARK" or "SYSTEM" (follow the phone setting).
+ */
 @Composable
-fun MyApplicationTheme(
-    darkTheme: Boolean = true, // Default to dark theme matching Sprout aesthetic
+fun PlantHabitTheme(
+    themeMode: String = "SYSTEM",
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val dark = when (themeMode) {
+        "LIGHT" -> false
+        "DARK" -> true
+        else -> isSystemInDarkTheme()
+    }
+    val colors = if (dark) DarkAppColors else LightAppColors
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalAppColors provides colors) {
+        MaterialTheme(
+            colorScheme = colors.toMaterialScheme(),
+            typography = Typography,
+            shapes = Shapes(
+                extraSmall = AppShapes.small,
+                small = AppShapes.small,
+                medium = AppShapes.medium,
+                large = AppShapes.large,
+                extraLarge = AppShapes.xl,
+            ),
+            content = content
+        )
+    }
 }

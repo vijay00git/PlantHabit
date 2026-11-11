@@ -1,35 +1,35 @@
 package com.example.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.model.MoodLogEntity
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutCardDark
+import com.example.ui.theme.AccentPair
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
 
 data class MoodOption(
     val score: Int,
@@ -43,6 +43,7 @@ fun MoodTrackerCard(
     onSelectMood: (Int, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val c = PlantTheme.colors
     val moods = listOf(
         MoodOption(5, "😄", "Great"),
         MoodOption(4, "🙂", "Good"),
@@ -51,47 +52,42 @@ fun MoodTrackerCard(
         MoodOption(1, "😣", "Bad")
     )
 
-    Box(
+    PlantCard(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(SproutCardDark)
-            .border(1.dp, SproutCardBorderDark, RoundedCornerShape(24.dp))
-            .padding(18.dp)
-            .testTag("card_mood_tracker")
+            .testTag("card_mood_tracker"),
+        contentPadding = 18.dp
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Daily Mood Check-in",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        style = MaterialTheme.typography.titleMedium,
+                        color = c.textPrimary
                     )
                     Text(
                         text = if (currentMood != null) "Logged: ${currentMood.moodLabel} today" else "How are you feeling today?",
-                        fontSize = 12.sp,
-                        color = Color(0xFF94A3B8)
+                        style = MaterialTheme.typography.bodySmall,
+                        color = c.textSecondary
                     )
                 }
 
                 // Balance badge
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF221E33))
+                        .clip(AppShapes.pill)
+                        .background(c.primarySoft)
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "85% Good or great",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SproutAccentGreenGlow
+                        style = MaterialTheme.typography.labelSmall,
+                        color = c.primary
                     )
                 }
             }
@@ -103,37 +99,82 @@ fun MoodTrackerCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 moods.forEach { option ->
-                    val isSelected = currentMood?.moodScore == option.score
-
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(if (isSelected) SproutAccentAmber.copy(alpha = 0.25f) else Color(0xFF232032))
-                            .border(
-                                1.5.dp,
-                                if (isSelected) SproutAccentAmber else Color.Transparent,
-                                CircleShape
-                            )
-                            .clickable { onSelectMood(option.score, option.label) }
-                            .testTag("mood_option_${option.label}"),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = option.emoji,
-                                fontSize = 22.sp
-                            )
-                            Text(
-                                text = option.label,
-                                fontSize = 8.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) SproutAccentAmber else Color(0xFF94A3B8)
-                            )
-                        }
+                    val accent = when (option.score) {
+                        5 -> AccentPair(c.primary, c.primarySoft)
+                        4 -> AccentPair(c.sky, c.skySoft)
+                        3 -> AccentPair(c.sun, c.sunSoft)
+                        2 -> AccentPair(c.sunrise, c.sunriseSoft)
+                        else -> AccentPair(c.berry, c.berrySoft)
                     }
+                    MoodBubble(
+                        option = option,
+                        accent = accent,
+                        isSelected = currentMood?.moodScore == option.score,
+                        onClick = { onSelectMood(option.score, option.label) },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MoodBubble(
+    option: MoodOption,
+    accent: AccentPair,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val c = PlantTheme.colors
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.15f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "mood_scale"
+    )
+    val bubbleColor by animateColorAsState(
+        targetValue = if (isSelected) accent.soft else c.cardMuted,
+        animationSpec = tween(300),
+        label = "mood_bg"
+    )
+    val ringColor by animateColorAsState(
+        targetValue = if (isSelected) accent.color else Color.Transparent,
+        animationSpec = tween(300),
+        label = "mood_ring"
+    )
+    val labelColor by animateColorAsState(
+        targetValue = if (isSelected) accent.color else c.textMuted,
+        animationSpec = tween(300),
+        label = "mood_label"
+    )
+
+    Column(
+        modifier = modifier
+            .bounceClick(pressedScale = 0.88f, onClick = onClick)
+            .testTag("mood_option_${option.label}"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .graphicsLayer { scaleX = scale; scaleY = scale }
+                .size(50.dp)
+                .clip(CircleShape)
+                .background(bubbleColor)
+                .border(2.dp, ringColor, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = option.emoji,
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
+        Text(
+            text = option.label,
+            style = MaterialTheme.typography.labelMedium,
+            color = labelColor
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -7,54 +8,69 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.ChallengeEntity
 import com.example.data.model.ChallengeTaskItem
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreen
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutCardDark
-import com.example.ui.theme.SproutPrimary
-import com.example.ui.theme.SproutPrimaryLight
+import com.example.ui.components.CelebrationBurst
+import com.example.ui.components.IconBubble
+import com.example.ui.components.ProgressRing
+import com.example.ui.components.rememberHaptics
+import com.example.ui.components.staggeredEntrance
+import com.example.ui.theme.AccentPair
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import com.example.ui.theme.categoryColors
+import com.example.ui.theme.dreamGradient
+import com.example.ui.theme.heroGradient
+import com.example.ui.theme.sunriseGradient
+import kotlinx.coroutines.delay
+
+/** How long the accept celebration plays before the dialog closes. */
+private const val ACCEPT_CELEBRATION_MS = 650L
 
 @Composable
 fun ChallengeDetailsDialog(
@@ -63,6 +79,10 @@ fun ChallengeDetailsDialog(
     onLeave: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
+    val accent = c.categoryColors(challenge.category)
+
     val tasks = challenge.getParsedTasks().ifEmpty {
         listOf(
             ChallengeTaskItem(
@@ -83,168 +103,109 @@ fun ChallengeDetailsDialog(
 
     val isGoalCounter = challenge.goalTarget > 0f
 
+    // Accept flow: fire the burst + haptic, let it play, then accept and close.
+    var accepting by remember { mutableStateOf(false) }
+    var burstTrigger by remember { mutableIntStateOf(0) }
+    val currentOnAccept by rememberUpdatedState(onAccept)
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+    LaunchedEffect(accepting) {
+        if (accepting) {
+            delay(ACCEPT_CELEBRATION_MS)
+            currentOnAccept()
+            currentOnDismiss()
+        }
+    }
+
     Dialog(
-        onDismissRequest = onDismiss,
+        // Ignore outside-tap/back while the celebration plays so the accept isn't lost.
+        onDismissRequest = { if (!accepting) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF151320))
-                .border(1.dp, SproutCardBorderDark, RoundedCornerShape(28.dp))
-                .padding(22.dp)
+                .clip(AppShapes.xl)
+                .background(c.surface)
+                .border(1.dp, c.border, AppShapes.xl)
         ) {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Top Header Row with Category & Close
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                DetailsHeader(
+                    challenge = challenge,
+                    accent = accent,
+                    onClose = { if (!accepting) onDismiss() }
+                )
+
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SproutPrimary.copy(alpha = 0.2f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = challenge.category.uppercase(),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SproutPrimaryLight,
-                                letterSpacing = 1.sp
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF262335))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "${challenge.durationDays} Days",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = SproutAccentAmber
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF221E33))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                    // Description
+                    if (challenge.description.isNotBlank()) {
+                        Text(
+                            text = challenge.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = c.textSecondary,
+                            modifier = Modifier.staggeredEntrance(0)
                         )
                     }
-                }
 
-                // Title and Subtitle
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = challenge.title,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = challenge.subtitle,
-                        fontSize = 13.sp,
-                        color = SproutAccentAmber,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = challenge.description,
-                        fontSize = 13.sp,
-                        color = Color(0xFFCBD5E1),
-                        lineHeight = 18.sp,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                // Science & Daily Philosophy Tip
-                if (challenge.dailyTip.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(
-                                        Color(0xFF261938),
-                                        Color(0xFF1E1630)
-                                    )
-                                )
-                            )
-                            .border(1.dp, SproutPrimary.copy(alpha = 0.3f), RoundedCornerShape(18.dp))
-                            .padding(14.dp)
-                    ) {
+                    // Science & Daily Philosophy Tip
+                    if (challenge.dailyTip.isNotBlank()) {
                         Row(
+                            modifier = Modifier
+                                .staggeredEntrance(1)
+                                .fillMaxWidth()
+                                .clip(AppShapes.medium)
+                                .background(c.sunSoft)
+                                .border(1.dp, c.sun.copy(alpha = 0.3f), AppShapes.medium)
+                                .padding(14.dp),
                             verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Lightbulb,
-                                contentDescription = null,
-                                tint = SproutAccentAmber,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            IconBubble(background = c.sun.copy(alpha = 0.2f), size = 34.dp) {
+                                Icon(
+                                    imageVector = Icons.Default.Lightbulb,
+                                    contentDescription = null,
+                                    tint = c.sun,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
                                     text = "DAILY PHILOSOPHY & TIP",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SproutAccentAmber,
-                                    letterSpacing = 0.5.sp
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = c.sun
                                 )
                                 Text(
                                     text = challenge.dailyTip,
-                                    fontSize = 12.sp,
-                                    color = Color(0xFFF1F5F9),
-                                    lineHeight = 16.sp
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = c.textPrimary
                                 )
                             }
                         }
                     }
-                }
 
-                // Goal Counter Overview (if applicable)
-                if (isGoalCounter) {
-                    val progressRatio = (challenge.goalCurrent / challenge.goalTarget.coerceAtLeast(1f)).coerceIn(0f, 1f)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(18.dp))
-                            .background(Color(0xFF201B2E))
-                            .padding(14.dp)
-                    ) {
+                    // Goal Counter Overview (if applicable)
+                    if (isGoalCounter) {
+                        val progressRatio = (challenge.goalCurrent / challenge.goalTarget.coerceAtLeast(1f)).coerceIn(0f, 1f)
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .staggeredEntrance(2)
+                                .fillMaxWidth()
+                                .clip(AppShapes.medium)
+                                .background(c.cardMuted)
+                                .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
                                 Text(
                                     text = "MILESTONE TRACKER",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SproutAccentGreenGlow
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = c.primary
                                 )
                                 Text(
                                     text = "%.0f %s of %.0f %s".format(
@@ -253,273 +214,339 @@ fun ChallengeDetailsDialog(
                                         challenge.goalTarget,
                                         challenge.goalUnit
                                     ),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = c.textPrimary
                                 )
                                 Text(
-                                    text = "${((progressRatio) * 100).toInt()}% completed • On track",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF94A3B8)
+                                    text = "${(progressRatio * 100).toInt()}% completed • On track",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = c.textSecondary
                                 )
                             }
 
-                            Box(
-                                modifier = Modifier.size(54.dp),
-                                contentAlignment = Alignment.Center
+                            Spacer(Modifier.width(12.dp))
+
+                            ProgressRing(
+                                progress = progressRatio,
+                                size = 58.dp,
+                                strokeWidth = 6.dp,
+                                trackColor = c.border
                             ) {
-                                CircularProgressIndicator(
-                                    progress = { 1f },
-                                    modifier = Modifier.size(54.dp),
-                                    color = Color(0xFF332D42),
-                                    strokeWidth = 5.dp
-                                )
-                                CircularProgressIndicator(
-                                    progress = { progressRatio },
-                                    modifier = Modifier.size(54.dp),
-                                    color = SproutAccentGreenGlow,
-                                    strokeWidth = 5.dp
-                                )
                                 Text(
                                     text = "${(progressRatio * 100).toInt()}%",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = c.textPrimary
                                 )
                             }
                         }
                     }
-                }
 
-                // Section: TASKS, HABITS & REMINDERS INCLUDED
-                Text(
-                    text = "HABITS & REMINDERS INCLUDED (${tasks.size})",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8),
-                    letterSpacing = 1.sp
-                )
+                    // Section: TASKS, HABITS & REMINDERS INCLUDED
+                    Text(
+                        text = "HABITS & REMINDERS INCLUDED (${tasks.size})",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = c.textSecondary,
+                        modifier = Modifier.staggeredEntrance(3)
+                    )
 
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    tasks.forEachIndexed { index, task ->
-                        val iconVector = when (task.iconName) {
-                            "sun" -> Icons.Default.WbSunny
-                            "moon" -> Icons.Default.NightsStay
-                            "walk" -> Icons.Default.DirectionsWalk
-                            "water" -> Icons.Default.WaterDrop
-                            "alarm" -> Icons.Default.Alarm
-                            else -> Icons.Default.AutoAwesome
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFF1F1C2B))
-                                .border(1.dp, Color(0xFF2E2A3E), RoundedCornerShape(16.dp))
-                                .padding(14.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(42.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(SproutPrimary.copy(alpha = 0.2f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = iconVector,
-                                        contentDescription = null,
-                                        tint = SproutPrimaryLight,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = task.title,
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(Color(0xFF2A263D))
-                                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                                        ) {
-                                            Text(
-                                                text = "${task.targetValue} ${task.unit}",
-                                                fontSize = 11.sp,
-                                                color = SproutAccentAmber,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                        }
-                                    }
-
-                                    if (task.description.isNotBlank()) {
-                                        Text(
-                                            text = task.description,
-                                            fontSize = 12.sp,
-                                            color = Color(0xFFCBD5E1)
-                                        )
-                                    }
-
-                                    // Reminder & Calendar Badges
-                                    Row(
-                                        modifier = Modifier.padding(top = 4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        if (task.reminderEnabled) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Alarm,
-                                                    contentDescription = null,
-                                                    tint = SproutAccentAmber,
-                                                    modifier = Modifier.size(13.dp)
-                                                )
-                                                Text(
-                                                    text = "Alarm: ${task.reminderTime}",
-                                                    fontSize = 11.sp,
-                                                    color = SproutAccentAmber
-                                                )
-                                            }
-                                        }
-
-                                        if (task.syncWithGoogleCalendar) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.CalendarMonth,
-                                                    contentDescription = null,
-                                                    tint = SproutPrimaryLight,
-                                                    modifier = Modifier.size(13.dp)
-                                                )
-                                                Text(
-                                                    text = "Google Calendar sync",
-                                                    fontSize = 11.sp,
-                                                    color = SproutPrimaryLight
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        tasks.forEachIndexed { index, task ->
+                            TaskRow(
+                                task = task,
+                                fallbackAccent = accent,
+                                modifier = Modifier.staggeredEntrance(4 + index)
+                            )
                         }
                     }
-                }
 
-                // Action Decision Buttons
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    if (!challenge.isJoined) {
-                        Button(
-                            onClick = {
-                                onAccept()
-                                onDismiss()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp)
-                                .testTag("btn_accept_challenge_popup"),
-                            colors = ButtonDefaults.buttonColors(containerColor = SproutPrimary),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = "Accept Challenge & Add Habits 🌱",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
+                    // Action Decision Buttons
+                    Column(
+                        modifier = Modifier
+                            .staggeredEntrance(4 + tasks.size)
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        if (!challenge.isJoined) {
+                            ChallengeGradientButton(
+                                text = if (accepting) "Challenge accepted! 🎉" else "Accept Challenge & Add Habits 🌱",
+                                icon = Icons.Default.Check,
+                                haptic = false,
+                                onClick = {
+                                    if (!accepting) {
+                                        haptics.success()
+                                        burstTrigger++
+                                        accepting = true
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("btn_accept_challenge_popup")
+                            )
 
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(46.dp)
-                                .testTag("btn_decline_challenge_popup"),
-                            shape = RoundedCornerShape(14.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF332D42))
-                        ) {
-                            Text(
+                            ChallengeOutlinedButton(
                                 text = "Decline / Maybe Later",
-                                fontSize = 13.sp,
-                                color = Color(0xFF94A3B8)
+                                onClick = { if (!accepting) onDismiss() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("btn_decline_challenge_popup"),
+                                height = 46.dp
                             )
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                onLeave()
-                                onDismiss()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .testTag("btn_leave_challenge_popup"),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7F1D1D)),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text(
+                        } else {
+                            ChallengeGradientButton(
                                 text = "Leave This Challenge",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                icon = Icons.Default.Logout,
+                                brush = SolidColor(c.berry),
+                                contentColor = c.onAccent,
+                                haptic = false,
+                                onClick = {
+                                    haptics.reject()
+                                    onLeave()
+                                    onDismiss()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("btn_leave_challenge_popup"),
+                                height = 48.dp
                             )
-                        }
 
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF332D42))
-                        ) {
-                            Text(
+                            ChallengeOutlinedButton(
                                 text = "Close Details",
-                                fontSize = 13.sp,
-                                color = Color(0xFFCBD5E1)
+                                onClick = onDismiss,
+                                modifier = Modifier.fillMaxWidth(),
+                                height = 44.dp
                             )
                         }
                     }
                 }
             }
+
+            // Celebration overlay (doesn't intercept touches)
+            CelebrationBurst(
+                trigger = burstTrigger,
+                modifier = Modifier.matchParentSize(),
+                particleCount = 36
+            )
         }
+    }
+}
+
+@Composable
+private fun DetailsHeader(
+    challenge: ChallengeEntity,
+    accent: AccentPair,
+    onClose: () -> Unit,
+) {
+    val c = PlantTheme.colors
+    val photo = challengePhotoRes(challenge)
+    val fallbackBrush: Brush = when (challenge.category.trim().lowercase()) {
+        "fitness", "exercise", "sport", "movement", "routine" -> c.sunriseGradient
+        "mindfulness", "mind", "meditation", "mental" -> c.dreamGradient
+        else -> c.heroGradient
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(190.dp)
+    ) {
+        if (photo != null) {
+            Image(
+                painter = painterResource(id = photo),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(fallbackBrush)
+            )
+            // Large faded category glyph for texture
+            Icon(
+                imageVector = challengeCategoryIcon(challenge.category),
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.22f),
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .offset(x = 24.dp, y = (-12).dp)
+                    .size(150.dp)
+            )
+        }
+
+        // Scrim so the white title stays legible on any photo/gradient.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.Black.copy(alpha = 0.10f),
+                            Color.Black.copy(alpha = 0.25f),
+                            Color.Black.copy(alpha = 0.72f)
+                        )
+                    )
+                )
+        )
+
+        ChallengeCloseButton(
+            onClick = onClose,
+            onPhoto = true,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(14.dp)
+        )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .fillMaxWidth()
+                .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                HeaderChip(text = challenge.category.uppercase(), accent = accent, icon = challengeCategoryIcon(challenge.category))
+                HeaderChip(text = "${challenge.durationDays} Days", accent = AccentPair(c.sun, c.sunSoft), icon = null)
+                if (challenge.isJoined) {
+                    HeaderChip(text = "Active", accent = AccentPair(c.primary, c.primarySoft), icon = Icons.Default.Check)
+                }
+            }
+            Text(
+                text = challenge.title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.White,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (challenge.subtitle.isNotBlank()) {
+                Text(
+                    text = challenge.subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.88f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeaderChip(text: String, accent: AccentPair, icon: ImageVector?) {
+    Row(
+        modifier = Modifier
+            .clip(AppShapes.pill)
+            .background(accent.soft)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        if (icon != null) {
+            Icon(imageVector = icon, contentDescription = null, tint = accent.color, modifier = Modifier.size(12.dp))
+        }
+        Text(text = text, style = MaterialTheme.typography.labelSmall, color = accent.color)
+    }
+}
+
+@Composable
+private fun TaskRow(
+    task: ChallengeTaskItem,
+    fallbackAccent: AccentPair,
+    modifier: Modifier = Modifier,
+) {
+    val c = PlantTheme.colors
+    val (iconVector, taskAccent) = when (task.iconName) {
+        "sun" -> Icons.Default.WbSunny to AccentPair(c.sun, c.sunSoft)
+        "moon" -> Icons.Default.NightsStay to AccentPair(c.lavender, c.lavenderSoft)
+        "walk" -> Icons.Default.DirectionsWalk to AccentPair(c.sunrise, c.sunriseSoft)
+        "water" -> Icons.Default.WaterDrop to AccentPair(c.sky, c.skySoft)
+        "alarm" -> Icons.Default.Alarm to AccentPair(c.berry, c.berrySoft)
+        else -> Icons.Default.AutoAwesome to fallbackAccent
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(AppShapes.medium)
+            .background(c.card)
+            .border(1.dp, c.border, AppShapes.medium)
+            .padding(14.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        IconBubble(background = taskAccent.soft, size = 42.dp) {
+            Icon(
+                imageVector = iconVector,
+                contentDescription = null,
+                tint = taskAccent.color,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = c.textPrimary,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(AppShapes.pill)
+                        .background(c.sunSoft)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "${task.targetValue} ${task.unit}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = c.sun
+                    )
+                }
+            }
+
+            if (task.description.isNotBlank()) {
+                Text(
+                    text = task.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary
+                )
+            }
+
+            // Reminder & Calendar Badges
+            if (task.reminderEnabled || task.syncWithGoogleCalendar) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (task.reminderEnabled) {
+                        MetaBadge(icon = Icons.Default.Alarm, text = "Alarm: ${task.reminderTime}", color = c.sunrise)
+                    }
+                    if (task.syncWithGoogleCalendar) {
+                        MetaBadge(icon = Icons.Default.CalendarMonth, text = "Google Calendar sync", color = c.sky)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetaBadge(icon: ImageVector, text: String, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(13.dp))
+        Text(text = text, style = MaterialTheme.typography.labelSmall, color = color)
     }
 }

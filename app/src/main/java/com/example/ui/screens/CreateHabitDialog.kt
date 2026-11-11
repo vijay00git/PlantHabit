@@ -1,60 +1,117 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.WbTwilight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreen
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutCardDark
-import com.example.ui.theme.SproutPrimary
-import com.example.ui.theme.SproutPrimaryLight
+import com.example.ui.components.AnimatedCounter
+import com.example.ui.components.IconBubble
+import com.example.ui.components.PlantCard
+import com.example.ui.components.bounceClick
+import com.example.ui.components.rememberHaptics
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import com.example.ui.theme.categoryColors
+import com.example.ui.theme.leafGradient
+import com.example.ui.theme.sunriseGradient
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalLayoutApi::class)
+private data class TimeOfDayOption(val value: String, val label: String, val icon: ImageVector)
+
+private val timeOfDayOptions = listOf(
+    TimeOfDayOption("MORNING", "Morning", Icons.Default.WbTwilight),
+    TimeOfDayOption("AFTERNOON", "Afternoon", Icons.Default.WbSunny),
+    TimeOfDayOption("EVENING", "Evening", Icons.Default.Bedtime),
+)
+
+private fun categoryIcon(category: String): ImageVector = when (category) {
+    "Health" -> Icons.Default.Favorite
+    "Mindfulness" -> Icons.Default.SelfImprovement
+    "Fitness" -> Icons.Default.FitnessCenter
+    "Productivity" -> Icons.Default.Bolt
+    else -> Icons.Default.Favorite
+}
+
+/** Sensible stepper increment per unit, so "ml" or "steps" don't need hundreds of taps. */
+private fun stepFor(unit: String): Int = when (unit) {
+    "ml" -> 250
+    "steps" -> 1000
+    "mins" -> 5
+    else -> 1
+}
+
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CreateHabitDialog(
     onDismiss: () -> Unit,
@@ -69,252 +126,540 @@ fun CreateHabitDialog(
         syncGoogleCalendar: Boolean
     ) -> Unit
 ) {
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     var title by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Health") }
     var timeOfDay by remember { mutableStateOf("MORNING") }
     var scheduledTime by remember { mutableStateOf("08:00") }
-    var targetValueString by remember { mutableStateOf("1") }
+    var target by remember { mutableIntStateOf(1) }
     var unit by remember { mutableStateOf("tasks") }
     var reminderEnabled by remember { mutableStateOf(true) }
     var syncGoogleCalendar by remember { mutableStateOf(true) }
+    var isSaving by remember { mutableStateOf(false) }
 
     val categories = listOf("Health", "Mindfulness", "Fitness", "Productivity")
-    val timesOfDay = listOf("MORNING", "AFTERNOON", "EVENING")
     val units = listOf("tasks", "ml", "steps", "mins", "glasses")
+    val canSave = title.isNotBlank() && !isSaving
 
-    Dialog(onDismissRequest = onDismiss) {
-        Box(
+    fun closeAnimated() {
+        scope.launch { sheetState.hide() }.invokeOnCompletion {
+            if (!sheetState.isVisible) onDismiss()
+        }
+    }
+
+    fun save() {
+        if (title.isBlank() || isSaving) return
+        isSaving = true
+        haptics.success()
+        val finalTitle = title.trim()
+        val finalTime = scheduledTime.ifEmpty { "08:00" }
+        scope.launch { sheetState.hide() }.invokeOnCompletion {
+            onSave(
+                finalTitle,
+                category,
+                timeOfDay,
+                finalTime,
+                target,
+                unit,
+                reminderEnabled,
+                syncGoogleCalendar
+            )
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = c.surface,
+        contentColor = c.textPrimary,
+        scrimColor = c.scrim,
+        tonalElevation = 0.dp,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp, bottom = 4.dp)
+                    .size(width = 44.dp, height = 5.dp)
+                    .clip(AppShapes.pill)
+                    .background(c.border)
+            )
+        }
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF181622))
-                .border(1.dp, SproutCardBorderDark, RoundedCornerShape(28.dp))
-                .padding(22.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Column {
                     Text(
-                        text = "New Habit",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        text = "New Habit 🌱",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = c.textPrimary
                     )
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF262335))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Cancel",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                    Text(
+                        text = "Plant a small seed, watch it grow",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = c.textSecondary
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(c.cardMuted)
+                        .bounceClick { closeAnimated() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel",
+                        tint = c.textPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+
+            // Title Input
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Habit title") },
+                placeholder = { Text("e.g., Drink 8 glasses of water") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Done
+                ),
+                textStyle = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("input_habit_title"),
+                colors = plantFieldColors(),
+                shape = AppShapes.medium
+            )
+
+            // Category Chips
+            FieldSection(label = "CATEGORY") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    categories.forEach { cat ->
+                        HabitCategoryChip(
+                            category = cat,
+                            selected = category == cat,
+                            onClick = { category = cat }
                         )
                     }
                 }
+            }
 
-                // Title Input
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Habit Title", color = Color(0xFF94A3B8)) },
-                    placeholder = { Text("e.g., Drink 3000 Glasses of Water", color = Color(0xFF64748B)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("input_habit_title"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = SproutPrimaryLight,
-                        unfocusedBorderColor = Color(0xFF332D42)
-                    ),
-                    shape = RoundedCornerShape(14.dp)
+            // Time of Day
+            FieldSection(label = "TIME OF DAY") {
+                TimeOfDaySegmented(
+                    selected = timeOfDay,
+                    onSelect = { timeOfDay = it }
                 )
+            }
 
-                // Category Chips
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("CATEGORY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        categories.forEach { cat ->
-                            val isSelected = category == cat
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isSelected) SproutPrimary else Color(0xFF262335))
-                                    .clickable { category = cat }
-                                    .padding(horizontal = 14.dp, vertical = 6.dp)
-                                    .testTag("chip_cat_$cat")
-                            ) {
-                                Text(
-                                    text = cat,
-                                    fontSize = 12.sp,
-                                    color = if (isSelected) Color.White else Color(0xFFCBD5E1),
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Time of Day
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("TIME OF DAY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), letterSpacing = 0.5.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        timesOfDay.forEach { tod ->
-                            val isSelected = timeOfDay == tod
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(if (isSelected) SproutAccentAmber else Color(0xFF262335))
-                                    .clickable { timeOfDay = tod }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = tod,
-                                    fontSize = 11.sp,
-                                    color = if (isSelected) Color.Black else Color(0xFFCBD5E1),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Schedule Time & Target
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+            // Schedule Time & Target
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                FieldSection(label = "TIME", modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
                         value = scheduledTime,
                         onValueChange = { scheduledTime = it },
-                        label = { Text("Time (HH:mm)", color = Color(0xFF94A3B8)) },
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = SproutPrimaryLight,
-                            unfocusedBorderColor = Color(0xFF332D42)
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = targetValueString,
-                        onValueChange = { targetValueString = it },
-                        label = { Text("Target", color = Color(0xFF94A3B8)) },
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = SproutPrimaryLight,
-                            unfocusedBorderColor = Color(0xFF332D42)
-                        ),
-                        shape = RoundedCornerShape(14.dp)
+                        placeholder = { Text("HH:mm") },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                        },
+                        textStyle = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = plantFieldColors(),
+                        shape = AppShapes.medium
                     )
                 }
 
-                // Unit selection
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FieldSection(label = "DAILY TARGET", modifier = Modifier.weight(1f)) {
+                    TargetStepper(
+                        value = target,
+                        onMinus = {
+                            val step = stepFor(unit)
+                            target = maxOf(1, ((target - 1) / step) * step)
+                        },
+                        onPlus = {
+                            val step = stepFor(unit)
+                            target = ((target / step) + 1) * step
+                        },
+                        canDecrease = target > 1
+                    )
+                }
+            }
+
+            // Unit selection
+            FieldSection(label = "UNIT") {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     units.forEach { u ->
-                        val isSelected = unit == u
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) Color(0xFF332D42) else Color(0xFF1E1C28))
-                                .border(1.dp, if (isSelected) SproutPrimaryLight else Color.Transparent, RoundedCornerShape(12.dp))
-                                .clickable { unit = u }
-                                .padding(horizontal = 10.dp, vertical = 5.dp)
-                        ) {
-                            Text(text = u, fontSize = 11.sp, color = if (isSelected) Color.White else Color(0xFF94A3B8))
-                        }
+                        UnitChip(label = u, selected = unit == u, onClick = { unit = u })
                     }
                 }
+            }
 
-                // Notification Reminder Switch
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Alarm, contentDescription = null, tint = SproutAccentAmber)
-                        Column {
-                            Text("Daily Reminder", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("Flexible exact push alerts", fontSize = 11.sp, color = Color(0xFF94A3B8))
-                        }
+            // Reminder + calendar switches
+            PlantCard(
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = c.card,
+                contentPadding = 14.dp
+            ) {
+                ToggleRow(
+                    icon = Icons.Default.Alarm,
+                    tint = c.sunrise,
+                    bubble = c.sunriseSoft,
+                    title = "Daily reminder",
+                    subtitle = "Flexible exact push alerts",
+                    checked = reminderEnabled,
+                    onCheckedChange = {
+                        haptics.tick()
+                        reminderEnabled = it
                     }
-                    Switch(
-                        checked = reminderEnabled,
-                        onCheckedChange = { reminderEnabled = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = SproutAccentAmber, checkedTrackColor = SproutAccentAmber.copy(alpha = 0.5f))
-                    )
-                }
-
-                // Google Calendar Sync Switch
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = SproutPrimaryLight)
-                        Column {
-                            Text("Sync with Google Calendar", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("Across all devices", fontSize = 11.sp, color = Color(0xFF94A3B8))
-                        }
-                    }
-                    Switch(
-                        checked = syncGoogleCalendar,
-                        onCheckedChange = { syncGoogleCalendar = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = SproutPrimaryLight, checkedTrackColor = SproutPrimary.copy(alpha = 0.5f))
-                    )
-                }
-
-                // Save Button
-                Button(
-                    onClick = {
-                        val target = targetValueString.toIntOrNull() ?: 1
-                        if (title.isNotBlank()) {
-                            onSave(
-                                title.trim(),
-                                category,
-                                timeOfDay,
-                                scheduledTime.ifEmpty { "08:00" },
-                                target,
-                                unit,
-                                reminderEnabled,
-                                syncGoogleCalendar
-                            )
-                        }
-                    },
-                    modifier = Modifier
+                )
+                Box(
+                    Modifier
+                        .padding(vertical = 10.dp)
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .testTag("btn_save_habit"),
-                    colors = ButtonDefaults.buttonColors(containerColor = SproutPrimary),
-                    shape = RoundedCornerShape(16.dp),
-                    enabled = title.isNotBlank()
+                        .height(1.dp)
+                        .background(c.divider)
+                )
+                ToggleRow(
+                    icon = Icons.Default.CalendarMonth,
+                    tint = c.sky,
+                    bubble = c.skySoft,
+                    title = "Sync with Google Calendar",
+                    subtitle = "Across all devices",
+                    checked = syncGoogleCalendar,
+                    onCheckedChange = {
+                        haptics.tick()
+                        syncGoogleCalendar = it
+                    }
+                )
+            }
+
+            // Save Button
+            val enabledAlpha by animateFloatAsState(
+                targetValue = if (canSave) 1f else 0f,
+                animationSpec = tween(300),
+                label = "saveEnabled"
+            )
+            val saveTextColor by animateColorAsState(
+                targetValue = if (canSave) c.onPrimary else c.textMuted,
+                animationSpec = tween(300),
+                label = "saveText"
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .bounceClick(enabled = canSave, haptic = false) { save() }
+                    .clip(AppShapes.medium)
+                    .background(c.cardMuted)
+                    .background(c.leafGradient, alpha = enabledAlpha)
+                    .testTag("btn_save_habit"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Plant This Habit 🌱",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = saveTextColor
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FieldSection(
+    label: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = PlantTheme.colors.textMuted
+        )
+        content()
+    }
+}
+
+@Composable
+private fun plantFieldColors(): TextFieldColors {
+    val c = PlantTheme.colors
+    return OutlinedTextFieldDefaults.colors(
+        focusedTextColor = c.textPrimary,
+        unfocusedTextColor = c.textPrimary,
+        focusedContainerColor = c.cardMuted,
+        unfocusedContainerColor = c.cardMuted,
+        focusedBorderColor = c.primary,
+        unfocusedBorderColor = Color.Transparent,
+        cursorColor = c.primary,
+        focusedLabelColor = c.primary,
+        unfocusedLabelColor = c.textSecondary,
+        focusedPlaceholderColor = c.textMuted,
+        unfocusedPlaceholderColor = c.textMuted,
+        focusedLeadingIconColor = c.primary,
+        unfocusedLeadingIconColor = c.textSecondary,
+    )
+}
+
+@Composable
+private fun HabitCategoryChip(
+    category: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val c = PlantTheme.colors
+    val accent = c.categoryColors(category)
+    val bg by animateColorAsState(
+        targetValue = if (selected) accent.color else accent.soft,
+        animationSpec = tween(280),
+        label = "chipBg"
+    )
+    val fg by animateColorAsState(
+        targetValue = if (selected) c.onAccent else accent.color,
+        animationSpec = tween(280),
+        label = "chipFg"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.04f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "chipScale"
+    )
+
+    Row(
+        modifier = Modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .bounceClick(onClick = onClick)
+            .clip(AppShapes.pill)
+            .background(bg)
+            .padding(horizontal = 14.dp, vertical = 9.dp)
+            .testTag("chip_cat_$category"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = categoryIcon(category),
+            contentDescription = null,
+            tint = fg,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(text = category, style = MaterialTheme.typography.labelLarge, color = fg)
+        AnimatedVisibility(
+            visible = selected,
+            enter = expandHorizontally(tween(250)) + fadeIn(tween(250)),
+            exit = shrinkHorizontally(tween(200)) + fadeOut(tween(150))
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = fg,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnitChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val c = PlantTheme.colors
+    val bg by animateColorAsState(if (selected) c.primarySoft else c.cardMuted, tween(250), label = "unitBg")
+    val fg by animateColorAsState(if (selected) c.primary else c.textSecondary, tween(250), label = "unitFg")
+    val stroke by animateColorAsState(if (selected) c.primary else Color.Transparent, tween(250), label = "unitBorder")
+    Box(
+        modifier = Modifier
+            .bounceClick(onClick = onClick)
+            .clip(AppShapes.pill)
+            .background(bg)
+            .border(1.5.dp, stroke, AppShapes.pill)
+            .padding(horizontal = 14.dp, vertical = 7.dp)
+    ) {
+        Text(text = label, style = MaterialTheme.typography.labelMedium, color = fg)
+    }
+}
+
+/** Segmented control with a sliding sunrise-gradient pill. */
+@Composable
+private fun TimeOfDaySegmented(selected: String, onSelect: (String) -> Unit) {
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
+    val selectedIndex = timeOfDayOptions.indexOfFirst { it.value == selected }.coerceAtLeast(0)
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .clip(AppShapes.medium)
+            .background(c.cardMuted)
+            .padding(4.dp)
+    ) {
+        val segmentWidth = maxWidth / timeOfDayOptions.size
+        val indicatorOffset by animateDpAsState(
+            targetValue = segmentWidth * selectedIndex,
+            animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+            label = "todIndicator"
+        )
+        Box(
+            modifier = Modifier
+                .offset(x = indicatorOffset)
+                .width(segmentWidth)
+                .fillMaxHeight()
+                .clip(AppShapes.small)
+                .background(c.sunriseGradient)
+        )
+        Row(Modifier.fillMaxWidth().fillMaxHeight()) {
+            timeOfDayOptions.forEachIndexed { index, option ->
+                val isSelected = index == selectedIndex
+                val fg by animateColorAsState(
+                    targetValue = if (isSelected) c.onAccent else c.textSecondary,
+                    animationSpec = tween(250),
+                    label = "todFg"
+                )
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(AppShapes.small)
+                        .bounceClick(haptic = false) {
+                            if (!isSelected) haptics.tick()
+                            onSelect(option.value)
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Text("Plant This Habit 🌱", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Icon(option.icon, contentDescription = null, tint = fg, modifier = Modifier.size(16.dp))
+                    Text(
+                        text = option.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = fg,
+                        maxLines = 1,
+                        modifier = Modifier.padding(start = 5.dp)
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TargetStepper(
+    value: Int,
+    onMinus: () -> Unit,
+    onPlus: () -> Unit,
+    canDecrease: Boolean
+) {
+    val c = PlantTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(AppShapes.medium)
+            .background(c.cardMuted)
+            .padding(horizontal = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        StepperButton(
+            icon = Icons.Default.Remove,
+            description = "Decrease target",
+            enabled = canDecrease,
+            onClick = onMinus
+        )
+        AnimatedCounter(
+            value = value,
+            style = MaterialTheme.typography.titleLarge,
+            color = c.textPrimary
+        )
+        StepperButton(
+            icon = Icons.Default.Add,
+            description = "Increase target",
+            enabled = true,
+            onClick = onPlus
+        )
+    }
+}
+
+@Composable
+private fun StepperButton(
+    icon: ImageVector,
+    description: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val c = PlantTheme.colors
+    val bg by animateColorAsState(if (enabled) c.primarySoft else c.card, tween(200), label = "stepBg")
+    val fg by animateColorAsState(if (enabled) c.primary else c.textMuted, tween(200), label = "stepFg")
+    IconBubble(
+        background = bg,
+        size = 38.dp,
+        modifier = Modifier.bounceClick(enabled = enabled, pressedScale = 0.85f, onClick = onClick)
+    ) {
+        Icon(icon, contentDescription = description, tint = fg, modifier = Modifier.size(18.dp))
+    }
+}
+
+@Composable
+private fun ToggleRow(
+    icon: ImageVector,
+    tint: Color,
+    bubble: Color,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    val c = PlantTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        IconBubble(background = bubble, size = 40.dp) {
+            Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = c.textPrimary)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = c.textSecondary)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = c.onPrimary,
+                checkedTrackColor = c.primary,
+                checkedBorderColor = c.primary,
+                uncheckedThumbColor = c.textMuted,
+                uncheckedTrackColor = c.cardMuted,
+                uncheckedBorderColor = c.border,
+            )
+        )
     }
 }

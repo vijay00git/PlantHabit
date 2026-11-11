@@ -1,54 +1,80 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutBackgroundDark
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutCardDark
-import com.example.ui.theme.SproutPrimary
-import com.example.ui.theme.SproutPrimaryLight
+import com.example.ui.components.CelebrationBurst
+import com.example.ui.components.IconBubble
+import com.example.ui.components.PlantCard
+import com.example.ui.components.SectionHeader
+import com.example.ui.components.bounceClick
+import com.example.ui.components.rememberHaptics
+import com.example.ui.components.staggeredEntrance
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import com.example.ui.theme.categoryColors
+import com.example.ui.theme.dreamGradient
+import kotlinx.coroutines.delay
 
 data class AiRecommendation(
     val id: String,
@@ -60,12 +86,22 @@ data class AiRecommendation(
     val category: String
 )
 
+private fun aiCategoryIcon(category: String): ImageVector = when (category.trim().lowercase()) {
+    "mindfulness" -> Icons.Default.SelfImprovement
+    "fitness" -> Icons.Default.FitnessCenter
+    "health" -> Icons.Default.Favorite
+    "productivity" -> Icons.Default.ElectricBolt
+    else -> Icons.Default.Spa
+}
+
 @Composable
 fun AiCoachScreen(
     onAdoptRecommendation: (AiRecommendation) -> Unit,
     onOpenAiPlanner: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
     var adoptedIds by remember { mutableStateOf(setOf<String>()) }
 
     val recommendations = remember {
@@ -103,56 +139,26 @@ fun AiCoachScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(SproutBackgroundDark),
+            .background(c.background),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Top Header
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = SproutPrimaryLight,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = "PlantHabit AI Coach",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-                Text(
-                    text = "Intelligent routine optimization and natural language planning",
-                    fontSize = 13.sp,
-                    color = Color(0xFF94A3B8)
-                )
-            }
+        // Hero header
+        item(key = "hero") {
+            AiCoachHero(modifier = Modifier.staggeredEntrance(0))
         }
 
-        // Natural Language Routine Planner Card (Screenshot 2: "Just say it. AI plans it.")
-        item {
-            Box(
+        // Natural Language Routine Planner Card
+        item(key = "planner") {
+            PlantCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF3B1A54),
-                                Color(0xFF1E1738)
-                            )
-                        )
-                    )
-                    .border(1.dp, Color(0xFFC084FC).copy(alpha = 0.4f), RoundedCornerShape(24.dp))
-                    .clickable { onOpenAiPlanner() }
-                    .padding(20.dp)
-                    .testTag("card_ai_natural_language_planner")
+                    .staggeredEntrance(1)
+                    .testTag("card_ai_natural_language_planner"),
+                onClick = onOpenAiPlanner,
+                containerColor = c.card,
+                borderColor = c.lavender.copy(alpha = 0.35f),
+                contentPadding = 20.dp
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
@@ -162,218 +168,467 @@ fun AiCoachScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFC084FC).copy(alpha = 0.25f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                .clip(AppShapes.pill)
+                                .background(c.lavenderSoft)
+                                .padding(horizontal = 12.dp, vertical = 5.dp)
                         ) {
                             Text(
                                 text = "JUST SAY IT. AI PLANS IT",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFE9D5FF),
-                                letterSpacing = 1.sp
+                                style = MaterialTheme.typography.labelSmall,
+                                color = c.lavender
                             )
                         }
-
-                        Icon(
-                            imageVector = Icons.Default.ElectricBolt,
-                            contentDescription = null,
-                            tint = SproutAccentAmber,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        IconBubble(background = c.sunSoft, size = 36.dp) {
+                            Icon(
+                                imageVector = Icons.Default.ElectricBolt,
+                                contentDescription = null,
+                                tint = c.sun,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
 
                     Text(
                         text = "Type or speak your plans",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = c.textPrimary
                     )
 
                     Text(
                         text = "e.g., \"Wake up at 6am, run 5km, read 20 pages, wind down by 10pm\". The AI turns your words into structured habits & reminders.",
-                        fontSize = 13.sp,
-                        color = Color(0xFFCBD5E1),
-                        lineHeight = 18.sp
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = c.textSecondary
                     )
 
-                    Button(
-                        onClick = onOpenAiPlanner,
-                        colors = ButtonDefaults.buttonColors(containerColor = SproutPrimary),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth().height(44.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .bounceClick(pressedScale = 0.97f, onClick = onOpenAiPlanner)
+                            .clip(AppShapes.medium)
+                            .background(c.dreamGradient),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "Launch Natural Language Planner ✨",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = c.onAccent,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Launch Natural Language Planner",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = c.onAccent
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Hero Coaching Insight
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF28133C),
-                                Color(0xFF1E1638)
-                            )
-                        )
-                    )
-                    .border(1.dp, SproutPrimaryLight.copy(alpha = 0.35f), RoundedCornerShape(24.dp))
-                    .padding(20.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(SproutPrimary.copy(alpha = 0.4f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Psychology,
-                                contentDescription = null,
-                                tint = SproutPrimaryLight,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Text(
-                            text = "TODAY'S AI INSIGHT",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SproutPrimaryLight,
-                            letterSpacing = 1.sp
-                        )
-                    }
-
-                    Text(
-                        text = "Your morning routine is 85% consistent! To maintain your streak through the weekend, stack an evening hydration anchor.",
-                        fontSize = 14.sp,
-                        color = Color(0xFFF1F5F9),
-                        lineHeight = 20.sp
-                    )
-                }
-            }
+        // Today's insight
+        item(key = "insight") {
+            AiInsightCard(modifier = Modifier.staggeredEntrance(2))
         }
 
         // Section Title
-        item {
-            Text(
-                text = "PERSONALIZED RECOMMENDATIONS",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF64748B),
-                letterSpacing = 1.sp
+        item(key = "section") {
+            SectionHeader(
+                title = "Recommended for you",
+                modifier = Modifier.staggeredEntrance(3)
             )
         }
 
         // Recommendations List
-        items(recommendations.size) { index ->
-            val rec = recommendations[index]
-            val isAdopted = adoptedIds.contains(rec.id)
+        itemsIndexed(recommendations, key = { _, rec -> rec.id }) { index, rec ->
+            RecommendationCard(
+                rec = rec,
+                isAdopted = adoptedIds.contains(rec.id),
+                onAdopt = {
+                    if (!adoptedIds.contains(rec.id)) {
+                        haptics.success()
+                        adoptedIds = adoptedIds + rec.id
+                        onAdoptRecommendation(rec)
+                    }
+                },
+                modifier = Modifier.staggeredEntrance(index + 4)
+            )
+        }
+    }
+}
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(SproutCardDark)
-                    .border(1.dp, SproutCardBorderDark, RoundedCornerShape(22.dp))
-                    .padding(18.dp)
-                    .testTag("ai_rec_${rec.id}")
+@Composable
+private fun AiCoachHero(modifier: Modifier = Modifier) {
+    val c = PlantTheme.colors
+    val pulse = rememberInfiniteTransition(label = "heroPulse")
+    val sparkleScale by pulse.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "sparkleScale"
+    )
+    val haloAlpha by pulse.animateFloat(
+        initialValue = 0.18f,
+        targetValue = 0.34f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "haloAlpha"
+    )
+    val sparkleRotation by pulse.animateFloat(
+        initialValue = -8f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "sparkleRotation"
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(AppShapes.xl)
+            .background(c.dreamGradient)
+            .padding(22.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .graphicsLayer { scaleX = sparkleScale * 1.08f; scaleY = sparkleScale * 1.08f }
+                        .clip(CircleShape)
+                        .background(c.onAccent.copy(alpha = haloAlpha))
+                )
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = c.onAccent,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .graphicsLayer {
+                            scaleX = sparkleScale
+                            scaleY = sparkleScale
+                            rotationZ = sparkleRotation
+                        }
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "PlantHabit AI Coach",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = c.onAccent
+                )
+                Text(
+                    text = "Intelligent routine optimization and natural language planning",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.onAccent.copy(alpha = 0.85f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiInsightCard(modifier: Modifier = Modifier) {
+    val c = PlantTheme.colors
+    var thinking by rememberSaveable { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        if (thinking) {
+            delay(900)
+            thinking = false
+        }
+    }
+
+    PlantCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize(animationSpec = tween(350)),
+        containerColor = c.lavenderSoft,
+        borderColor = c.lavender.copy(alpha = 0.3f),
+        contentPadding = 20.dp
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = rec.title,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF262335))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = rec.scheduledTime,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = SproutAccentAmber
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = rec.rationale,
-                        fontSize = 13.sp,
-                        color = Color(0xFF94A3B8),
-                        lineHeight = 18.sp
+                IconBubble(background = c.lavender, size = 34.dp) {
+                    Icon(
+                        imageVector = Icons.Default.Psychology,
+                        contentDescription = null,
+                        tint = c.onAccent,
+                        modifier = Modifier.size(18.dp)
                     )
+                }
+                Text(
+                    text = "TODAY'S AI INSIGHT",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = c.lavender
+                )
+            }
 
+            AnimatedContent(
+                targetState = thinking,
+                transitionSpec = {
+                    (fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 4 }) togetherWith fadeOut(tween(200))
+                },
+                label = "insightThinking"
+            ) { isThinking ->
+                if (isThinking) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
                     ) {
+                        AiThinkingDots(color = c.lavender)
                         Text(
-                            text = "+ ${rec.habitName}",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SproutAccentGreenGlow
+                            text = "Coach is reviewing your week…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = c.textSecondary
                         )
-
-                        Button(
-                            onClick = {
-                                if (!isAdopted) {
-                                    adoptedIds = adoptedIds + rec.id
-                                    onAdoptRecommendation(rec)
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isAdopted) Color(0xFF14532D) else SproutPrimary
-                            ),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.height(38.dp)
-                        ) {
-                            if (isAdopted) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = SproutAccentGreenGlow, modifier = Modifier.size(16.dp))
-                                    Text("Added", fontSize = 12.sp, color = SproutAccentGreenGlow)
-                                }
-                            } else {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Text("Add to Schedule", fontSize = 12.sp, color = Color.White)
-                                }
-                            }
-                        }
                     }
+                } else {
+                    Text(
+                        text = "Your morning routine is 85% consistent! To maintain your streak through the weekend, stack an evening hydration anchor.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = c.textPrimary
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RecommendationCard(
+    rec: AiRecommendation,
+    isAdopted: Boolean,
+    onAdopt: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val c = PlantTheme.colors
+    val accent = c.categoryColors(rec.category)
+
+    PlantCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("ai_rec_${rec.id}"),
+        containerColor = c.card,
+        contentPadding = 18.dp
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                IconBubble(background = accent.soft, size = 44.dp) {
+                    Icon(
+                        imageVector = aiCategoryIcon(rec.category),
+                        contentDescription = null,
+                        tint = accent.color,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = rec.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = c.textPrimary
+                    )
+                    Text(
+                        text = rec.category,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = accent.color
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .clip(AppShapes.pill)
+                        .background(c.sunSoft)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = c.sun,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Text(
+                        text = rec.scheduledTime,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = c.sun
+                    )
+                }
+            }
+
+            Text(
+                text = rec.rationale,
+                style = MaterialTheme.typography.bodyMedium,
+                color = c.textSecondary
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                        .clip(AppShapes.small)
+                        .background(accent.soft)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = accent.color, modifier = Modifier.size(14.dp))
+                    Text(
+                        text = rec.habitName,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = accent.color,
+                        maxLines = 1
+                    )
+                }
+
+                AdoptButton(isAdopted = isAdopted, onAdopt = onAdopt)
+            }
+        }
+    }
+}
+
+private enum class AdoptState { Idle, JustAdded, Scheduled }
+
+/**
+ * "Adopt" pill: on tap it pops into a bright "Added ✓" state with a confetti burst,
+ * then settles into a calmer "Scheduled" state after a moment.
+ */
+@Composable
+private fun AdoptButton(isAdopted: Boolean, onAdopt: () -> Unit) {
+    val c = PlantTheme.colors
+    var justAdded by remember { mutableStateOf(false) }
+    var burst by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(justAdded) {
+        if (justAdded) {
+            delay(1600)
+            justAdded = false
+        }
+    }
+
+    val state = when {
+        !isAdopted -> AdoptState.Idle
+        justAdded -> AdoptState.JustAdded
+        else -> AdoptState.Scheduled
+    }
+
+    val bg by animateColorAsState(
+        targetValue = when (state) {
+            AdoptState.Idle -> c.primary
+            AdoptState.JustAdded -> c.primaryDeep
+            AdoptState.Scheduled -> c.primarySoft
+        },
+        animationSpec = tween(320),
+        label = "adoptBg"
+    )
+    val fg = when (state) {
+        AdoptState.Scheduled -> c.primary
+        else -> c.onPrimary
+    }
+
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .height(40.dp)
+                .bounceClick(enabled = !isAdopted, haptic = false) {
+                    justAdded = true
+                    burst++
+                    onAdopt()
+                }
+                .clip(AppShapes.pill)
+                .background(bg)
+                .animateContentSize(spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow))
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            AnimatedContent(
+                targetState = state,
+                transitionSpec = {
+                    (scaleIn(initialScale = 0.7f, animationSpec = tween(260)) + fadeIn(tween(260))) togetherWith
+                        (scaleOut(targetScale = 0.7f, animationSpec = tween(180)) + fadeOut(tween(180)))
+                },
+                label = "adoptContent"
+            ) { s ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val (icon, label) = when (s) {
+                        AdoptState.Idle -> Icons.Default.Add to "Adopt"
+                        AdoptState.JustAdded -> Icons.Default.Check to "Added ✓"
+                        AdoptState.Scheduled -> Icons.Default.EventAvailable to "Scheduled"
+                    }
+                    if (s != AdoptState.JustAdded) {
+                        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(16.dp))
+                    }
+                    Text(text = label, style = MaterialTheme.typography.labelLarge, color = fg)
+                }
+            }
+        }
+        CelebrationBurst(
+            trigger = burst,
+            modifier = Modifier.matchParentSize(),
+            particleCount = 18
+        )
+    }
+}
+
+/**
+ * Three softly bouncing dots, used wherever the AI is "thinking".
+ * Shared with [AiNaturalLanguagePlannerDialog].
+ */
+@Composable
+internal fun AiThinkingDots(
+    color: Color,
+    modifier: Modifier = Modifier,
+    dotSize: Dp = 8.dp
+) {
+    val transition = rememberInfiniteTransition(label = "thinkingDots")
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(dotSize * 0.6f),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) { i ->
+            val phase by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 1200, delayMillis = 0, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Restart,
+                    initialStartOffset = androidx.compose.animation.core.StartOffset(i * 160)
+                ),
+                label = "dot$i"
+            )
+            // Triangle wave 0 -> 1 -> 0 over the first half, rest in the second half
+            val wave = if (phase < 0.5f) 1f - kotlin.math.abs(phase * 4f - 1f) else 0f
+            Box(
+                modifier = Modifier
+                    .size(dotSize)
+                    .graphicsLayer {
+                        translationY = -wave * dotSize.toPx() * 0.6f
+                        alpha = 0.45f + 0.55f * wave
+                    }
+                    .clip(CircleShape)
+                    .background(color)
+            )
         }
     }
 }

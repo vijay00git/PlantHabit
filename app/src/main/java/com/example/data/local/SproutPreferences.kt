@@ -25,7 +25,7 @@ class SproutPreferences(private val context: Context) {
     }
 
     val themeModeFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[KEY_THEME_MODE] ?: "DARK" // Dark mode by default
+        preferences[KEY_THEME_MODE] ?: "SYSTEM" // Follow the phone setting by default
     }
 
     val isCalendarSyncEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->

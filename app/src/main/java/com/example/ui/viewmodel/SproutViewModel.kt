@@ -60,7 +60,7 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val themeMode: StateFlow<String> = preferences.themeModeFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "DARK")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "SYSTEM")
 
     private val _calendarEvents = MutableStateFlow<List<CalendarEventItem>>(emptyList())
     val calendarEvents: StateFlow<List<CalendarEventItem>> = _calendarEvents.asStateFlow()

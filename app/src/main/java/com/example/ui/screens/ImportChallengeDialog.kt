@@ -4,22 +4,25 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -28,14 +31,14 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,21 +46,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.repository.ChallengeJsonManager
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutPrimary
-import com.example.ui.theme.SproutPrimaryLight
+import com.example.ui.components.IconBubble
+import com.example.ui.components.bounceClick
+import com.example.ui.components.rememberHaptics
+import com.example.ui.theme.AccentPair
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import com.example.ui.theme.leafGradient
 
 @Composable
 fun ImportChallengeDialog(
@@ -67,6 +74,8 @@ fun ImportChallengeDialog(
     onOpenTemplate: () -> Unit
 ) {
     val context = LocalContext.current
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
     var jsonText by remember { mutableStateOf(initialJson) }
     var parseError by remember { mutableStateOf<String?>(null) }
     var parsedTitle by remember { mutableStateOf<String?>(null) }
@@ -95,6 +104,9 @@ fun ImportChallengeDialog(
         )
     }
 
+    // Show validation immediately when opened with a pre-filled draft (e.g. from the template).
+    LaunchedEffect(Unit) { validateCurrentJson(jsonText) }
+
     // File picker launcher
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -105,9 +117,11 @@ fun ImportChallengeDialog(
                     val content = stream.bufferedReader().use { it.readText() }
                     jsonText = content
                     validateCurrentJson(content)
+                    haptics.success()
                     Toast.makeText(context, "Loaded JSON file successfully!", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                haptics.reject()
                 Toast.makeText(context, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -117,223 +131,307 @@ fun ImportChallengeDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .clip(RoundedCornerShape(26.dp))
-                .background(Color(0xFF161421))
-                .border(1.dp, SproutCardBorderDark, RoundedCornerShape(26.dp))
-                .padding(20.dp)
-        ) {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+        ChallengeDialogSurface {
+            ChallengeDialogHeader(
+                icon = Icons.Default.FileUpload,
+                accent = AccentPair(c.primary, c.primarySoft),
+                title = "Import Challenge",
+                subtitle = "Upload or paste challenge JSON",
+                onClose = onDismiss
+            )
+
+            // Action buttons: Pick File & View Template
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(SproutPrimary.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FileUpload,
-                                contentDescription = null,
-                                tint = SproutPrimaryLight,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "Import Challenge",
-                                fontSize = 19.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Upload or paste challenge JSON",
-                                fontSize = 11.sp,
-                                color = Color(0xFF94A3B8)
-                            )
-                        }
-                    }
-
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF262335))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                // Action buttons: Pick File & View Template
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = { filePickerLauncher.launch("application/json") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("btn_pick_json_file"),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF221E33)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FolderOpen,
-                                contentDescription = null,
-                                tint = SproutPrimaryLight,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text("Pick .json File", fontSize = 12.sp, color = Color.White)
-                        }
-                    }
-
-                    Button(
-                        onClick = onOpenTemplate,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("btn_get_template"),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2038)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = null,
-                                tint = SproutAccentAmber,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text("Get Template", fontSize = 12.sp, color = SproutAccentAmber)
-                        }
-                    }
-                }
-
-                // JSON Text Input
-                OutlinedTextField(
-                    value = jsonText,
-                    onValueChange = {
-                        jsonText = it
-                        validateCurrentJson(it)
-                    },
+                ChallengeOutlinedButton(
+                    text = "Pick .json",
+                    icon = Icons.Default.FolderOpen,
+                    accent = c.primary,
+                    onClick = { filePickerLauncher.launch("application/json") },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .testTag("input_challenge_json"),
-                    label = { Text("Paste Challenge JSON", color = Color(0xFF94A3B8)) },
-                    placeholder = {
-                        Text(
-                            "{\n  \"id\": \"my_challenge\",\n  \"title\": \"30-Day Focus\",\n  \"durationDays\": 30,\n  \"habits\": [...]\n}",
-                            color = Color(0xFF64748B),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp
-                        )
-                    },
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        color = Color.White
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = SproutPrimaryLight,
-                        unfocusedBorderColor = Color(0xFF332D42),
-                        focusedContainerColor = Color(0xFF100F18),
-                        unfocusedContainerColor = Color(0xFF100F18)
-                    ),
-                    shape = RoundedCornerShape(14.dp)
+                        .weight(1f)
+                        .testTag("btn_pick_json_file")
                 )
-
-                // Validation Status Banner
-                if (parsedTitle != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF0F2E1E))
-                            .border(1.dp, SproutAccentGreenGlow.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(10.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = SproutAccentGreenGlow, modifier = Modifier.size(16.dp))
-                            Text(
-                                text = "Valid: '$parsedTitle' ($parsedHabitCount linked habits)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = SproutAccentGreenGlow
-                            )
-                        }
-                    }
-                } else if (parseError != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF38141D))
-                            .border(1.dp, Color(0xFFF43F5E).copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                            .padding(10.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFFFB7185), modifier = Modifier.size(16.dp))
-                            Text(
-                                text = parseError ?: "JSON error",
-                                fontSize = 11.sp,
-                                color = Color(0xFFFB7185)
-                            )
-                        }
-                    }
-                }
-
-                // Import Button
-                Button(
-                    onClick = {
-                        if (jsonText.isNotBlank()) {
-                            onImport(jsonText.trim())
-                        }
-                    },
+                ChallengeOutlinedButton(
+                    text = "Get Template",
+                    icon = Icons.Default.Download,
+                    accent = c.sun,
+                    onClick = onOpenTemplate,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .testTag("btn_submit_import_challenge"),
-                    colors = ButtonDefaults.buttonColors(containerColor = SproutPrimary),
-                    shape = RoundedCornerShape(14.dp),
-                    enabled = jsonText.isNotBlank() && parseError == null
-                ) {
-                    Text("Import & Start Challenge 🚀", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        .weight(1f)
+                        .testTag("btn_get_template")
+                )
+            }
+
+            // JSON Text Input
+            OutlinedTextField(
+                value = jsonText,
+                onValueChange = {
+                    jsonText = it
+                    validateCurrentJson(it)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .testTag("input_challenge_json"),
+                label = { Text("Paste Challenge JSON") },
+                placeholder = {
+                    Text(
+                        "{\n  \"id\": \"my_challenge\",\n  \"title\": \"30-Day Focus\",\n  \"durationDays\": 30,\n  \"habits\": [...]\n}",
+                        color = c.textMuted,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp
+                    )
+                },
+                textStyle = MaterialTheme.typography.bodySmall.copy(
+                    fontFamily = FontFamily.Monospace,
+                    color = c.textPrimary
+                ),
+                colors = challengeTextFieldColors(),
+                shape = AppShapes.medium
+            )
+
+            // Validation status banner (animates between none / valid / error)
+            AnimatedContent(
+                targetState = parsedTitle to parseError,
+                contentKey = { (title, error) ->
+                    when {
+                        title != null -> "valid"
+                        error != null -> "error"
+                        else -> "none"
+                    }
+                },
+                transitionSpec = {
+                    (fadeIn(tween(220)) + scaleIn(tween(260), initialScale = 0.96f)) togetherWith
+                        fadeOut(tween(150))
+                },
+                label = "jsonValidation"
+            ) { (title, error) ->
+                when {
+                    title != null -> StatusBanner(
+                        icon = Icons.Default.Check,
+                        text = "Valid: '$title' ($parsedHabitCount linked habits)",
+                        accent = AccentPair(c.primary, c.primarySoft)
+                    )
+                    error != null -> StatusBanner(
+                        icon = Icons.Default.Info,
+                        text = error,
+                        accent = AccentPair(c.berry, c.berrySoft)
+                    )
+                    else -> Box(Modifier.fillMaxWidth())
                 }
             }
+
+            // Import Button
+            ChallengeGradientButton(
+                text = "Import & Start Challenge",
+                icon = Icons.Default.RocketLaunch,
+                onClick = {
+                    if (jsonText.isNotBlank()) {
+                        onImport(jsonText.trim())
+                    }
+                },
+                enabled = jsonText.isNotBlank() && parseError == null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_submit_import_challenge")
+            )
         }
     }
+}
+
+@Composable
+private fun StatusBanner(icon: ImageVector, text: String, accent: AccentPair) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(AppShapes.small)
+            .background(accent.soft)
+            .border(1.dp, accent.color.copy(alpha = 0.35f), AppShapes.small)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(icon, contentDescription = null, tint = accent.color, modifier = Modifier.size(16.dp))
+        Text(text = text, style = MaterialTheme.typography.labelMedium, color = accent.color)
+    }
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Shared dialog building blocks for the Challenge dialogs                                      */
+/* (ImportChallengeDialog, TemplateJsonDialog, ChallengeDetailsDialog, ChallengesScreen)        */
+/* ------------------------------------------------------------------------------------------ */
+
+/** Themed dialog container: surface, hairline border, xl corners, scrollable column. */
+@Composable
+internal fun ChallengeDialogSurface(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val c = PlantTheme.colors
+    Box(
+        modifier = modifier
+            .fillMaxWidth(0.94f)
+            .clip(AppShapes.xl)
+            .background(c.surface)
+            .border(1.dp, c.border, AppShapes.xl)
+    ) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            content = content
+        )
+    }
+}
+
+/** Dialog title row: tinted icon bubble, title/subtitle and a round close button. */
+@Composable
+internal fun ChallengeDialogHeader(
+    icon: ImageVector,
+    accent: AccentPair,
+    title: String,
+    subtitle: String,
+    onClose: () -> Unit,
+) {
+    val c = PlantTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        IconBubble(background = accent.soft, size = 44.dp) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accent.color,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.titleLarge, color = c.textPrimary)
+            Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = c.textSecondary)
+        }
+        ChallengeCloseButton(onClick = onClose)
+    }
+}
+
+/** Small round close button. [onPhoto] uses a dark translucent backing for use over images. */
+@Composable
+internal fun ChallengeCloseButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onPhoto: Boolean = false,
+) {
+    val c = PlantTheme.colors
+    Box(
+        modifier = modifier
+            .size(34.dp)
+            .bounceClick(pressedScale = 0.88f, onClick = onClick)
+            .clip(AppShapes.pill)
+            .background(if (onPhoto) Color.Black.copy(alpha = 0.35f) else c.cardMuted),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Close,
+            contentDescription = "Close",
+            tint = if (onPhoto) Color.White else c.textPrimary,
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+/** Filled primary action on a gradient (leafGradient by default). */
+@Composable
+internal fun ChallengeGradientButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    brush: Brush? = null,
+    contentColor: Color? = null,
+    height: Dp = 52.dp,
+    haptic: Boolean = true,
+) {
+    val c = PlantTheme.colors
+    val fg by animateColorAsState(
+        targetValue = if (enabled) (contentColor ?: c.onPrimary) else c.textMuted,
+        animationSpec = tween(250),
+        label = "gradientButtonFg"
+    )
+    Box(
+        modifier = modifier
+            .height(height)
+            .bounceClick(enabled = enabled, haptic = haptic, onClick = onClick)
+            .clip(AppShapes.medium)
+            .background(if (enabled) (brush ?: c.leafGradient) else Brush.linearGradient(listOf(c.cardMuted, c.cardMuted))),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (icon != null) {
+                Icon(imageVector = icon, contentDescription = null, tint = fg, modifier = Modifier.size(18.dp))
+            }
+            Text(text = text, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
+        }
+    }
+}
+
+/** Secondary outlined action: accent-coloured hairline, label and icon. */
+@Composable
+internal fun ChallengeOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    accent: Color? = null,
+    height: Dp = 48.dp,
+    haptic: Boolean = true,
+) {
+    val c = PlantTheme.colors
+    val fg = accent ?: c.textSecondary
+    Box(
+        modifier = modifier
+            .height(height)
+            .bounceClick(haptic = haptic, onClick = onClick)
+            .clip(AppShapes.medium)
+            .border(1.dp, if (accent != null) accent.copy(alpha = 0.45f) else c.border, AppShapes.medium),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (icon != null) {
+                Icon(imageVector = icon, contentDescription = null, tint = fg, modifier = Modifier.size(16.dp))
+            }
+            Text(text = text, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
+        }
+    }
+}
+
+/** Theme-aware OutlinedTextField colours shared by challenge dialogs. */
+@Composable
+internal fun challengeTextFieldColors() = PlantTheme.colors.let { c ->
+    OutlinedTextFieldDefaults.colors(
+        focusedTextColor = c.textPrimary,
+        unfocusedTextColor = c.textPrimary,
+        focusedBorderColor = c.primary,
+        unfocusedBorderColor = c.border,
+        focusedContainerColor = c.cardMuted,
+        unfocusedContainerColor = c.cardMuted,
+        cursorColor = c.primary,
+        focusedLabelColor = c.primary,
+        unfocusedLabelColor = c.textSecondary,
+        focusedPlaceholderColor = c.textMuted,
+        unfocusedPlaceholderColor = c.textMuted,
+    )
 }

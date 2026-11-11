@@ -1,33 +1,41 @@
 package com.example.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.ui.theme.SproutAccentGreen
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutPrimary
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -39,6 +47,10 @@ data class DateItem(
     val dateString: String, // "2026-11-08"
     val isToday: Boolean
 )
+
+private val DayPillMinWidth = 46.dp
+private val DayPillSpacing = 6.dp
+private val StripSidePadding = 16.dp
 
 @Composable
 fun HorizontalDateStrip(
@@ -72,77 +84,145 @@ fun HorizontalDateStrip(
         list
     }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+    val listState = rememberLazyListState()
+    val selectedIndex = weekDays.indexOfFirst { it.dateString == selectedDate }
+
+    // Keep the selected day in view (no-op when the whole week already fits).
+    LaunchedEffect(selectedIndex) {
+        if (selectedIndex >= 0) {
+            val visible = listState.layoutInfo.visibleItemsInfo
+            val fullyVisible = visible.any { info ->
+                info.index == selectedIndex &&
+                    info.offset >= 0 &&
+                    info.offset + info.size <= listState.layoutInfo.viewportEndOffset
+            }
+            if (!fullyVisible) {
+                listState.animateScrollToItem((selectedIndex - 2).coerceAtLeast(0))
+            }
+        }
+    }
+
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        // Fill the width when there's room, otherwise fall back to a scrollable strip.
+        val available = maxWidth - StripSidePadding * 2 - DayPillSpacing * (weekDays.size - 1)
+        val pillWidth: Dp = maxOf(DayPillMinWidth, available / weekDays.size)
+
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = StripSidePadding, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(DayPillSpacing),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            itemsIndexed(weekDays, key = { _, item -> item.dateString }) { _, item ->
+                DayPill(
+                    item = item,
+                    isSelected = item.dateString == selectedDate,
+                    width = pillWidth,
+                    onClick = { onDateSelected(item.dateString) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayPill(
+    item: DateItem,
+    isSelected: Boolean,
+    width: Dp,
+    onClick: () -> Unit
+) {
+    val c = PlantTheme.colors
+
+    val containerColor by animateColorAsState(
+        targetValue = if (isSelected) c.primary else c.card,
+        animationSpec = tween(300),
+        label = "day_bg"
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) c.primary else c.border,
+        animationSpec = tween(300),
+        label = "day_border"
+    )
+    val dayTextColor by animateColorAsState(
+        targetValue = if (isSelected) c.onPrimary else c.textMuted,
+        animationSpec = tween(300),
+        label = "day_text"
+    )
+    val numberCircleColor by animateColorAsState(
+        targetValue = when {
+            isSelected -> c.onPrimary
+            item.isToday -> c.sunriseSoft
+            else -> c.cardMuted
+        },
+        animationSpec = tween(300),
+        label = "day_circle"
+    )
+    val numberTextColor by animateColorAsState(
+        targetValue = when {
+            isSelected -> c.primaryDeep
+            item.isToday -> c.sunrise
+            else -> c.textPrimary
+        },
+        animationSpec = tween(300),
+        label = "day_number"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.06f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "day_scale"
+    )
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .bounceClick(pressedScale = 0.92f, onClick = onClick)
+            .width(width)
+            .clip(AppShapes.large)
+            .background(containerColor)
+            .border(1.dp, borderColor, AppShapes.large)
+            .padding(vertical = 10.dp, horizontal = 4.dp)
+            .testTag("date_strip_${item.dayName}"),
+        contentAlignment = Alignment.Center
     ) {
-        weekDays.forEach { item ->
-            val isSelected = item.dateString == selectedDate
-
-            val containerColor = if (isSelected) {
-                Color(0xFFF1F5F9) // White-ish pill from screenshot
-            } else {
-                Color(0xFF1E1C28) // Deep dark card
-            }
-
-            val dayTextColor = if (isSelected) {
-                Color(0xFF334155)
-            } else {
-                Color(0xFF94A3B8)
-            }
-
-            val numberCircleColor = if (isSelected) {
-                Color(0xFFFFFFFF)
-            } else {
-                Color(0xFF282536)
-            }
-
-            val numberTextColor = if (isSelected) {
-                Color(0xFF0F172A)
-            } else {
-                Color(0xFFCBD5E1)
-            }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = item.dayName,
+                style = MaterialTheme.typography.labelMedium,
+                color = dayTextColor
+            )
 
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(containerColor)
-                    .clickable { onDateSelected(item.dateString) }
-                    .padding(vertical = 10.dp, horizontal = 4.dp)
-                    .width(44.dp)
-                    .testTag("date_strip_${item.dayName}"),
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(numberCircleColor),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = item.dayName,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = dayTextColor
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .clip(CircleShape)
-                            .background(numberCircleColor),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = item.dayNumber,
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = numberTextColor
-                        )
-                    }
-                }
+                Text(
+                    text = item.dayNumber,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = numberTextColor
+                )
             }
+
+            // Little "today" dot
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when {
+                            !item.isToday -> Color.Transparent
+                            isSelected -> c.onPrimary
+                            else -> c.sunrise
+                        }
+                    )
+            )
         }
     }
 }

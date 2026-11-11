@@ -1,28 +1,45 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.NightsStay
@@ -30,29 +47,33 @@ import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.data.model.CalendarEventItem
 import com.example.data.model.HabitWithStatus
+import com.example.ui.components.EmptyState
 import com.example.ui.components.HorizontalDateStrip
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutBackgroundDark
-import com.example.ui.theme.SproutCardDark
-import com.example.ui.theme.SproutPrimary
-import com.example.ui.theme.SproutPrimaryLight
+import com.example.ui.components.IconBubble
+import com.example.ui.components.bounceClick
+import com.example.ui.components.rememberHaptics
+import com.example.ui.components.staggeredEntrance
+import com.example.ui.theme.AccentPair
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import com.example.ui.theme.backgroundGlow
+import com.example.ui.theme.categoryColors
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -74,6 +95,8 @@ fun PlanScreen(
     onAddTaskClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val c = PlantTheme.colors
+
     val monthYearText = remember(selectedDate) {
         try {
             val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(selectedDate)
@@ -93,103 +116,105 @@ fun PlanScreen(
     val sortedHabits = remember(habitsWithStatus) {
         habitsWithStatus.sortedBy { it.habit.scheduledTime }
     }
+    // Index of the last habit scheduled at or before the current time; "Now" goes right after it
+    // (-1 = everything is later today, so "Now" goes above the first habit).
+    val nowIndex = remember(sortedHabits) {
+        val now24 = SimpleDateFormat("HH:mm", Locale.US).format(Date())
+        sortedHabits.indexOfLast { it.habit.scheduledTime.padStart(5, '0').take(5) <= now24 }
+    }
 
-    LazyColumn(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(SproutBackgroundDark),
-        contentPadding = PaddingValues(bottom = 100.dp)
+            .background(c.background)
     ) {
-        // Top Header: Month Year + Day/Week Toggle
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = monthYearText,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .background(c.backgroundGlow)
+        )
 
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 100.dp)
+        ) {
+            // Top Header: Month Year + Day/Week Toggle
+            item(key = "plan_header") {
                 Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Day / Week pill toggle
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFF211E2E))
-                            .padding(3.dp)
-                    ) {
-                        Row {
-                            listOf("Day", "Week").forEach { mode ->
-                                val isSelected = viewMode == mode
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(if (isSelected) SproutPrimary else Color.Transparent)
-                                        .clickable { onViewModeChange(mode) }
-                                        .padding(horizontal = 14.dp, vertical = 6.dp)
-                                        .testTag("plan_toggle_$mode"),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = mode,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isSelected) Color.White else Color(0xFF94A3B8)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    Text(
+                        text = monthYearText,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = c.textPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
 
-                    // Calendar View Icon
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF211E2E))
-                            .clickable { onRequestCalendarPermission() },
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = "Month Calendar",
-                            tint = Color(0xFFCBD5E1),
-                            modifier = Modifier.size(18.dp)
+                        ViewModeToggle(
+                            modes = listOf("Day", "Week"),
+                            selected = viewMode,
+                            onSelect = onViewModeChange
                         )
+
+                        // Calendar View Icon
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .bounceClick(pressedScale = 0.88f) { onRequestCalendarPermission() }
+                                .clip(CircleShape)
+                                .background(c.card)
+                                .border(1.dp, c.border, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = "Month Calendar",
+                                tint = c.sky,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // Horizontal Date Strip
-        item {
-            HorizontalDateStrip(
-                selectedDate = selectedDate,
-                onDateSelected = onDateSelected
-            )
-        }
+            // Horizontal Date Strip
+            item(key = "plan_date_strip") {
+                HorizontalDateStrip(
+                    selectedDate = selectedDate,
+                    onDateSelected = onDateSelected
+                )
+            }
 
-        // Vertical Connected Schedule Timeline
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-            ) {
-                sortedHabits.forEachIndexed { index, habitWithStatus ->
-                    val habit = habitWithStatus.habit
-                    val isCompleted = habitWithStatus.isCompleted
-                    val isLast = index == sortedHabits.lastIndex
+            item(key = "plan_timeline_top") { Spacer(Modifier.height(12.dp)) }
 
+            // Vertical Connected Schedule Timeline
+            itemsIndexed(
+                items = sortedHabits,
+                key = { _, h -> "habit_${h.habit.id}" }
+            ) { index, habitWithStatus ->
+                val habit = habitWithStatus.habit
+                val isCompleted = habitWithStatus.isCompleted
+                val isLast = index == sortedHabits.lastIndex
+
+                Column(
+                    modifier = Modifier
+                        .animateItem()
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .staggeredEntrance(index)
+                ) {
+                    if (index == 0 && nowIndex == -1) {
+                        NowIndicatorRow(timeString = nowTimeString, onAddTask = onAddTaskClick)
+                    }
                     TimelineRow(
                         timeLabel = habit.scheduledTime,
                         title = habit.title,
@@ -198,6 +223,7 @@ fun PlanScreen(
                             else "Scheduled habit"
                         },
                         iconName = habit.iconName,
+                        accent = c.categoryColors(habit.category),
                         isCompleted = isCompleted,
                         onToggle = { onToggleHabit(habitWithStatus) },
                         onIncrement = {
@@ -208,157 +234,224 @@ fun PlanScreen(
                         isLast = isLast
                     )
 
-                    // Render "Now" indicator line after 9:00 am or matching screenshot
-                    if (index == 2 || (index == sortedHabits.size / 2)) {
+                    // "Now" marker sits at the real current time
+                    if (index == nowIndex) {
                         NowIndicatorRow(
                             timeString = nowTimeString,
                             onAddTask = onAddTaskClick
                         )
                     }
                 }
-
-                // If habits empty
-                if (sortedHabits.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "No scheduled habits for this time slot.",
-                            fontSize = 14.sp,
-                            color = Color(0xFF64748B)
-                        )
-                    }
-                }
             }
-        }
 
-        // Calendar Events if synced
-        if (calendarEvents.isNotEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = "GOOGLE CALENDAR EVENTS",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B),
-                        letterSpacing = 1.sp,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    calendarEvents.forEach { event ->
-                        val startCal = Calendar.getInstance().apply { timeInMillis = event.startTime }
-                        val timeStr = SimpleDateFormat("h:mm a", Locale.getDefault()).format(startCal.time)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFF221E33))
-                                .padding(12.dp)
-                        ) {
+            // If habits empty
+            if (sortedHabits.isEmpty()) {
+                item(key = "plan_empty") {
+                    EmptyState(
+                        emoji = "🌱",
+                        title = "Nothing scheduled",
+                        message = "No scheduled habits for this time slot.",
+                        modifier = Modifier.animateItem(),
+                        action = {
                             Row(
+                                modifier = Modifier
+                                    .bounceClick { onAddTaskClick() }
+                                    .clip(AppShapes.pill)
+                                    .background(c.primary)
+                                    .padding(horizontal = 18.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(SproutPrimary.copy(alpha = 0.2f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Event,
-                                        contentDescription = null,
-                                        tint = SproutPrimaryLight,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                                Column {
-                                    Text(
-                                        text = event.title,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.White
-                                    )
-                                    Text(
-                                        text = "$timeStr ${event.location?.let { "• $it" } ?: ""}",
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF94A3B8)
-                                    )
-                                }
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = c.onPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = "Add task",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = c.onPrimary
+                                )
                             }
                         }
+                    )
+                }
+            }
+
+            // Calendar Events if synced
+            if (calendarEvents.isNotEmpty()) {
+                item(key = "plan_events_header") {
+                    Text(
+                        text = "GOOGLE CALENDAR EVENTS",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = c.textMuted,
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp)
+                    )
+                }
+
+                itemsIndexed(
+                    items = calendarEvents,
+                    key = { i, e -> "event_${e.id}_${e.startTime}_$i" }
+                ) { i, event ->
+                    val timeStr = remember(event.startTime) {
+                        val startCal = Calendar.getInstance().apply { timeInMillis = event.startTime }
+                        SimpleDateFormat("h:mm a", Locale.getDefault()).format(startCal.time)
+                    }
+                    Row(
+                        modifier = Modifier
+                            .animateItem()
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 4.dp)
+                            .staggeredEntrance(i)
+                            .clip(AppShapes.medium)
+                            .background(c.card)
+                            .border(1.dp, c.border, AppShapes.medium)
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        IconBubble(background = c.skySoft, size = 38.dp) {
+                            Icon(
+                                imageVector = Icons.Default.Event,
+                                contentDescription = null,
+                                tint = c.sky,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = event.title,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = c.textPrimary
+                            )
+                            Text(
+                                text = "$timeStr ${event.location?.let { "• $it" } ?: ""}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = c.textSecondary
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // Google Calendar Sync Prompt Card matching Screenshot 2
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .clip(RoundedCornerShape(22.dp))
-                    .background(Color(0xFF1B1925))
-                    .border(1.dp, Color(0xFF2B283A), RoundedCornerShape(22.dp))
-                    .clickable {
-                        if (!isCalendarPermissionGranted) {
-                            onRequestCalendarPermission()
-                        } else {
-                            onSyncWithCalendar()
-                        }
-                    }
-                    .padding(16.dp)
-                    .testTag("btn_sync_google_calendar")
-            ) {
+            // Google Calendar Sync Prompt Card
+            item(key = "plan_calendar_banner") {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .animateItem()
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                        .bounceClick(pressedScale = 0.97f) {
+                            if (!isCalendarPermissionGranted) {
+                                onRequestCalendarPermission()
+                            } else {
+                                onSyncWithCalendar()
+                            }
+                        }
+                        .clip(AppShapes.large)
+                        .background(c.skySoft)
+                        .border(1.dp, c.sky.copy(alpha = 0.3f), AppShapes.large)
+                        .padding(16.dp)
+                        .testTag("btn_sync_google_calendar"),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.weight(1f)
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(AppShapes.small)
+                            .background(c.sky),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SproutPrimary.copy(alpha = 0.15f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = if (isCalendarPermissionGranted) Icons.Default.Sync else Icons.Default.CalendarMonth,
-                                contentDescription = null,
-                                tint = SproutPrimaryLight,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-
-                        Column {
-                            Text(
-                                text = if (isCalendarPermissionGranted) "Google Calendar synced" else "Show my calendar events",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = if (isCalendarPermissionGranted) "Tap to push all habits as reminders to your device Calendar" else "Read-only, from your phone. Nothing leaves your device.",
-                                fontSize = 12.sp,
-                                color = Color(0xFF94A3B8)
-                            )
-                        }
+                        Icon(
+                            imageVector = if (isCalendarPermissionGranted) Icons.Default.Sync else Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = c.onAccent,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isCalendarPermissionGranted) "Google Calendar synced" else "Show my calendar events",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = c.textPrimary
+                        )
+                        Text(
+                            text = if (isCalendarPermissionGranted) "Tap to push all habits as reminders to your device Calendar" else "Read-only, from your phone. Nothing leaves your device.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.textSecondary
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = c.sky,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Segmented control with a pill indicator that slides between options. */
+@Composable
+private fun ViewModeToggle(
+    modes: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    val c = PlantTheme.colors
+    val segmentWidth = 58.dp
+    val segmentHeight = 32.dp
+    val selectedIndex = modes.indexOf(selected).coerceAtLeast(0)
+    val indicatorOffset by animateDpAsState(
+        targetValue = segmentWidth * selectedIndex,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+        label = "viewModeIndicator"
+    )
+
+    Box(
+        modifier = Modifier
+            .clip(AppShapes.pill)
+            .background(c.card)
+            .border(1.dp, c.border, AppShapes.pill)
+            .padding(3.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = indicatorOffset)
+                .size(width = segmentWidth, height = segmentHeight)
+                .clip(AppShapes.pill)
+                .background(c.primary)
+        )
+        Row {
+            modes.forEach { mode ->
+                val isSelected = mode == selected
+                val textColor by animateColorAsState(
+                    targetValue = if (isSelected) c.onPrimary else c.textSecondary,
+                    animationSpec = tween(250),
+                    label = "viewModeText"
+                )
+                Box(
+                    modifier = Modifier
+                        .size(width = segmentWidth, height = segmentHeight)
+                        .bounceClick(pressedScale = 0.92f, haptic = !isSelected) {
+                            if (!isSelected) onSelect(mode)
+                        }
+                        .testTag("plan_toggle_$mode"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = mode,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = textColor
+                    )
                 }
             }
         }
@@ -371,31 +464,49 @@ private fun TimelineRow(
     title: String,
     subtitle: String,
     iconName: String,
+    accent: AccentPair,
     isCompleted: Boolean,
     onToggle: () -> Unit,
     onIncrement: () -> Unit,
     isStepOrWater: Boolean,
     isLast: Boolean
 ) {
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
+
+    val bubbleColor by animateColorAsState(
+        targetValue = if (isCompleted) accent.color else accent.soft,
+        animationSpec = tween(350),
+        label = "timelineBubble"
+    )
+    val iconTint by animateColorAsState(
+        targetValue = if (isCompleted) c.onAccent else accent.color,
+        animationSpec = tween(350),
+        label = "timelineIcon"
+    )
+
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.Top
     ) {
         // Time Label on left
         Text(
             text = timeLabel,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF94A3B8),
+            style = MaterialTheme.typography.labelMedium,
+            color = c.textSecondary,
             modifier = Modifier
                 .width(44.dp)
-                .padding(top = 10.dp)
+                .padding(top = 12.dp)
         )
 
         // Connected timeline vertical axis
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 8.dp)
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(horizontal = 8.dp)
         ) {
             val iconVector = when (iconName) {
                 "sun" -> Icons.Default.WbSunny
@@ -405,17 +516,11 @@ private fun TimelineRow(
                 else -> Icons.Default.SelfImprovement
             }
 
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF262335)),
-                contentAlignment = Alignment.Center
-            ) {
+            IconBubble(background = bubbleColor, size = 40.dp) {
                 Icon(
                     imageVector = iconVector,
                     contentDescription = null,
-                    tint = if (isCompleted) SproutAccentAmber else Color(0xFFCBD5E1),
+                    tint = iconTint,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -423,9 +528,15 @@ private fun TimelineRow(
             if (!isLast) {
                 Box(
                     modifier = Modifier
-                        .width(2.dp)
-                        .height(54.dp)
-                        .background(Color(0xFF4C1D95).copy(alpha = 0.6f))
+                        .padding(vertical = 4.dp)
+                        .width(3.dp)
+                        .weight(1f)
+                        .clip(AppShapes.pill)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(accent.color.copy(alpha = 0.55f), accent.color.copy(alpha = 0.08f))
+                            )
+                        )
                 )
             }
         }
@@ -434,77 +545,100 @@ private fun TimelineRow(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 6.dp, top = 8.dp, bottom = 12.dp),
+                .padding(start = 6.dp, bottom = 14.dp)
+                .clip(AppShapes.medium)
+                .background(c.card)
+                .border(1.dp, if (isCompleted) accent.color.copy(alpha = 0.45f) else c.border, AppShapes.medium)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = c.textPrimary
+                )
 
                 Text(
                     text = subtitle,
-                    fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary
                 )
 
-                if (isCompleted) {
+                AnimatedVisibility(
+                    visible = isCompleted,
+                    enter = fadeIn(tween(300)) + scaleIn(initialScale = 0.9f),
+                    exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.9f)
+                ) {
                     Text(
                         text = "🏆 You owned that time.",
-                        fontSize = 11.sp,
-                        color = SproutAccentAmber,
-                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = c.sunrise,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
 
+            Spacer(Modifier.width(10.dp))
+
             // Action button: (+) or Checkbox
             if (isStepOrWater && !isCompleted) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
+                        .bounceClick(pressedScale = 0.85f) { onIncrement() }
                         .clip(CircleShape)
-                        .background(Color(0xFF221E33))
-                        .clickable { onIncrement() },
+                        .background(accent.soft),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Increment",
-                        tint = SproutAccentAmber,
+                        tint = accent.color,
                         modifier = Modifier.size(20.dp)
                     )
                 }
             } else {
+                val checkFill by animateColorAsState(
+                    targetValue = if (isCompleted) accent.color else Color.Transparent,
+                    animationSpec = tween(300),
+                    label = "checkFill"
+                )
+                val checkBorder by animateColorAsState(
+                    targetValue = if (isCompleted) accent.color else c.border,
+                    animationSpec = tween(300),
+                    label = "checkBorder"
+                )
+                val checkScale by animateFloatAsState(
+                    targetValue = if (isCompleted) 1f else 0f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                    label = "checkScale"
+                )
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(34.dp)
+                        .bounceClick(pressedScale = 0.85f, haptic = false) {
+                            if (isCompleted) haptics.tick() else haptics.success()
+                            onToggle()
+                        }
                         .clip(CircleShape)
-                        .background(if (isCompleted) SproutAccentAmber else Color.Transparent)
-                        .border(
-                            2.dp,
-                            if (isCompleted) SproutAccentAmber else Color(0xFF4B5563),
-                            CircleShape
-                        )
-                        .clickable { onToggle() },
+                        .background(checkFill)
+                        .border(2.dp, checkBorder, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isCompleted) {
+                    if (checkScale > 0.01f) {
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Done",
-                            tint = Color.Black,
-                            modifier = Modifier.size(18.dp)
+                            tint = c.onAccent,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .graphicsLayer {
+                                    scaleX = checkScale
+                                    scaleY = checkScale
+                                    alpha = checkScale.coerceIn(0f, 1f)
+                                }
                         )
                     }
                 }
@@ -518,10 +652,19 @@ private fun NowIndicatorRow(
     timeString: String,
     onAddTask: () -> Unit
 ) {
+    val c = PlantTheme.colors
+    val pulse = rememberInfiniteTransition(label = "nowPulse")
+    val pulseScale by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.8f,
+        animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Restart),
+        label = "nowPulseScale"
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp)
+            .padding(top = 2.dp, bottom = 16.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -529,20 +672,36 @@ private fun NowIndicatorRow(
         ) {
             Text(
                 text = timeString,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = SproutPrimaryLight,
+                style = MaterialTheme.typography.labelMedium,
+                color = c.primary,
                 modifier = Modifier.width(44.dp)
             )
 
-            // Small purple circle on timeline
+            // Pulsing dot on the timeline
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 22.dp)
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(SproutPrimaryLight)
-            )
+                    .padding(horizontal = 20.dp)
+                    .size(14.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .graphicsLayer {
+                            scaleX = pulseScale
+                            scaleY = pulseScale
+                            alpha = (1.8f - pulseScale) / 0.8f * 0.5f
+                        }
+                        .clip(CircleShape)
+                        .background(c.primary)
+                )
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(c.primary)
+                )
+            }
 
             // "Now" label & horizontal line
             Row(
@@ -550,22 +709,31 @@ private fun NowIndicatorRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Now",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SproutPrimaryLight
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(AppShapes.pill)
+                        .background(c.primarySoft)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "Now",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = c.primary
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(2.dp)
-                        .background(SproutPrimaryLight)
+                        .clip(AppShapes.pill)
+                        .background(
+                            Brush.horizontalGradient(listOf(c.primary, c.primary.copy(alpha = 0f)))
+                        )
                 )
             }
         }
 
-        // Countdown and Add Task button
+        // Add Task button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -573,32 +741,27 @@ private fun NowIndicatorRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF221E33))
-                    .clickable { onAddTask() }
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                    .bounceClick { onAddTask() }
+                    .clip(AppShapes.pill)
+                    .background(c.primarySoft)
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
                     .testTag("btn_add_task_inline"),
-                contentAlignment = Alignment.Center
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        tint = SproutPrimaryLight,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = "Add task",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = SproutPrimaryLight
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = c.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Add task",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = c.primary
+                )
             }
         }
     }

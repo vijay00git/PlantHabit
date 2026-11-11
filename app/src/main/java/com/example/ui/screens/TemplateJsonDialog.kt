@@ -7,50 +7,58 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.repository.ChallengeJsonManager
-import com.example.ui.theme.SproutAccentAmber
-import com.example.ui.theme.SproutAccentGreenGlow
-import com.example.ui.theme.SproutCardBorderDark
-import com.example.ui.theme.SproutPrimary
+import com.example.ui.components.bounceClick
+import com.example.ui.components.rememberHaptics
+import com.example.ui.theme.AccentPair
+import com.example.ui.theme.AppShapes
+import com.example.ui.theme.PlantTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun TemplateJsonDialog(
@@ -58,7 +66,20 @@ fun TemplateJsonDialog(
     onUseTemplateInImport: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val c = PlantTheme.colors
+    val haptics = rememberHaptics()
     val templateJson = remember { ChallengeJsonManager.getExampleTemplateJson() }
+
+    // Copy confirmation: each tap bumps the counter, which restarts the "Copied ✓" timer.
+    var copyCount by remember { mutableIntStateOf(0) }
+    var showCopied by remember { mutableStateOf(false) }
+    LaunchedEffect(copyCount) {
+        if (copyCount > 0) {
+            showCopied = true
+            delay(1600)
+            showCopied = false
+        }
+    }
 
     // Save document launcher
     val saveFileLauncher = rememberLauncherForActivityResult(
@@ -68,9 +89,11 @@ fun TemplateJsonDialog(
             try {
                 context.contentResolver.openOutputStream(uri)?.use { stream ->
                     stream.write(templateJson.toByteArray())
+                    haptics.success()
                     Toast.makeText(context, "Saved template file successfully! 📄", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                haptics.reject()
                 Toast.makeText(context, "Failed to save file: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -80,185 +103,132 @@ fun TemplateJsonDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .clip(RoundedCornerShape(26.dp))
-                .background(Color(0xFF161421))
-                .border(1.dp, SproutCardBorderDark, RoundedCornerShape(26.dp))
-                .padding(20.dp)
-        ) {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(SproutAccentAmber.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = null,
-                                tint = SproutAccentAmber,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "Challenge JSON Template",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Use this format to build your own challenges",
-                                fontSize = 11.sp,
-                                color = Color(0xFF94A3B8)
-                            )
-                        }
-                    }
+        ChallengeDialogSurface {
+            ChallengeDialogHeader(
+                icon = Icons.Default.DataObject,
+                accent = AccentPair(c.sun, c.sunSoft),
+                title = "Challenge JSON Template",
+                subtitle = "Use this format to build your own challenges",
+                onClose = onDismiss
+            )
 
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF262335))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+            // Description note
+            Text(
+                text = "Edit the fields below, change durationDays and add habits. Save this file to your phone, customize it, and import it at any time!",
+                style = MaterialTheme.typography.bodySmall,
+                color = c.textSecondary
+            )
+
+            // JSON code box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(240.dp)
+                    .clip(AppShapes.medium)
+                    .background(c.cardMuted)
+                    .border(1.dp, c.border, AppShapes.medium)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = templateJson,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp,
+                        color = c.textPrimary
+                    )
                 }
 
-                // Description note
-                Text(
-                    text = "Edit the fields below, change durationDays and add habits. Save this file to your phone, customize it, and import it at any time!",
-                    fontSize = 12.sp,
-                    color = Color(0xFFCBD5E1),
-                    lineHeight = 17.sp
-                )
-
-                // JSON code box
+                // "JSON" language tag in the corner
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF0F0E17))
-                        .border(1.dp, Color(0xFF2A263D), RoundedCornerShape(14.dp))
-                        .padding(12.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(AppShapes.pill)
+                        .background(c.sunSoft)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
-                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        Text(
-                            text = templateJson,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            color = Color(0xFFE2E8F0),
-                            lineHeight = 16.sp
-                        )
-                    }
+                    Text(text = "JSON", style = MaterialTheme.typography.labelSmall, color = c.sun)
                 }
+            }
 
-                // Action Buttons: Download JSON file, Copy to Clipboard, Load into Import
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = { saveFileLauncher.launch("sprout_challenge_template.json") },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp)
-                            .testTag("btn_download_template_file"),
-                        colors = ButtonDefaults.buttonColors(containerColor = SproutAccentAmber),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Download,
-                                contentDescription = null,
-                                tint = Color(0xFF1E1C28),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text("Download .json", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E1C28))
-                        }
-                    }
+            // Action Buttons: Download JSON file, Copy to Clipboard
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ChallengeOutlinedButton(
+                    text = "Download .json",
+                    icon = Icons.Default.Download,
+                    accent = c.sun,
+                    onClick = { saveFileLauncher.launch("sprout_challenge_template.json") },
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("btn_download_template_file"),
+                    height = 46.dp
+                )
 
-                    Button(
-                        onClick = {
+                // Copy with animated "Copied ✓" confirmation
+                val copyAccent = if (showCopied) c.primary else c.sky
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(46.dp)
+                        .bounceClick(haptic = false) {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             val clip = ClipData.newPlainText("PlantHabit Challenge Template", templateJson)
                             clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Template JSON copied to clipboard! 📋", Toast.LENGTH_SHORT).show()
+                            haptics.success()
+                            copyCount++
+                        }
+                        .clip(AppShapes.medium)
+                        .background(if (showCopied) c.primarySoft else c.skySoft)
+                        .border(1.dp, copyAccent.copy(alpha = 0.45f), AppShapes.medium)
+                        .testTag("btn_copy_template_json"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedContent(
+                        targetState = showCopied,
+                        transitionSpec = {
+                            (fadeIn(tween(220)) + scaleIn(tween(260), initialScale = 0.8f)) togetherWith
+                                (fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.8f))
                         },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp)
-                            .testTag("btn_copy_template_json"),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF262335)),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
+                        label = "copyState"
+                    ) { copied ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ContentCopy,
+                                imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = if (copied) c.primary else c.sky,
                                 modifier = Modifier.size(16.dp)
                             )
-                            Text("Copy JSON", fontSize = 12.sp, color = Color.White)
+                            Text(
+                                text = if (copied) "Copied ✓" else "Copy JSON",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (copied) c.primary else c.sky
+                            )
                         }
                     }
                 }
-
-                Button(
-                    onClick = {
-                        onUseTemplateInImport(templateJson)
-                        onDismiss()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp)
-                        .testTag("btn_load_into_import"),
-                    colors = ButtonDefaults.buttonColors(containerColor = SproutPrimary),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text("Use Template in Import Editor", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
             }
+
+            ChallengeGradientButton(
+                text = "Use Template in Import Editor",
+                icon = Icons.Default.PlayArrow,
+                onClick = {
+                    onUseTemplateInImport(templateJson)
+                    onDismiss()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_load_into_import")
+            )
         }
     }
 }
