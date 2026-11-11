@@ -13,6 +13,7 @@ import com.example.service.ReminderScheduler
 import com.example.widget.PlantHabitWidget
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -268,6 +269,12 @@ class HabitRepository(
     }
 
     suspend fun getAllHabitsOnce(): List<HabitEntity> = habitDao.getAllHabitsList()
+
+    fun logsForHabit(habitId: Long): Flow<List<HabitLogEntity>> = habitDao.getLogsForHabitFlow(habitId)
+
+    /** Live copy of one habit (null once deleted). */
+    fun habitFlow(habitId: Long): Flow<HabitEntity?> =
+        habitDao.getAllHabitsFlow().map { list -> list.firstOrNull { it.id == habitId } }
 
     /** Creates/updates events for every habit with calendar sync on. Returns how many. */
     suspend fun syncAllHabitsToCalendar(): Int {

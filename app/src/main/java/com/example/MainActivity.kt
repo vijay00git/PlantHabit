@@ -51,6 +51,7 @@ import com.example.ui.screens.ChallengeDetailsDialog
 import com.example.ui.screens.ChallengesScreen
 import com.example.ui.screens.CreateHabitDialog
 import com.example.ui.screens.FocusModeDialog
+import com.example.ui.screens.HabitDetailsSheet
 import com.example.ui.screens.ImportChallengeDialog
 import com.example.ui.screens.PlanScreen
 import com.example.ui.screens.SettingsDialog
@@ -108,6 +109,7 @@ fun SproutApp(viewModel: SproutViewModel) {
 
     val isCreateHabitOpen by viewModel.isCreateHabitOpen.collectAsState()
     val editingHabit by viewModel.editingHabit.collectAsState()
+    val detailsHabit by viewModel.habitDetails.collectAsState()
     val calendars by viewModel.calendars.collectAsState()
     val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
     val targetCalendarId by viewModel.targetCalendarId.collectAsState()
@@ -245,7 +247,7 @@ fun SproutApp(viewModel: SproutViewModel) {
                         onFilterSelected = { viewModel.setFilter(it) },
                         habitsWithStatus = habitsWithStatus,
                         onToggleHabit = { viewModel.toggleHabitCompleted(it.habit) },
-                        onOpenHabitDetails = { viewModel.editingHabit.value = it },
+                        onOpenHabitDetails = { viewModel.habitDetails.value = it },
                         onIncrementHabit = { habitWithStatus, amount ->
                             viewModel.incrementHabitProgress(habitWithStatus.habit, amount)
                         },
@@ -309,7 +311,7 @@ fun SproutApp(viewModel: SproutViewModel) {
                             viewModel.incrementHabitProgress(habitWithStatus.habit, amount)
                         },
                         onAddTaskClick = { viewModel.isCreateHabitOpen.value = true },
-                        onOpenHabitDetails = { viewModel.editingHabit.value = it }
+                        onOpenHabitDetails = { viewModel.habitDetails.value = it }
                     )
                 }
 
@@ -394,6 +396,32 @@ fun SproutApp(viewModel: SproutViewModel) {
                     onCompleteHabit = { viewModel.toggleHabitCompleted(it.habit) },
                     onDismiss = { viewModel.isFocusModeOpen.value = false }
                 )
+            }
+
+            // Habit details & history sheet
+            detailsHabit?.let { opened ->
+                val liveHabit by remember(opened.id) { viewModel.repository.habitFlow(opened.id) }.collectAsState(initial = opened)
+                val habitLogs by remember(opened.id) { viewModel.repository.logsForHabit(opened.id) }.collectAsState(initial = emptyList())
+                val habit = liveHabit
+                if (habit == null) {
+                    // Deleted while open
+                    LaunchedEffect(Unit) { viewModel.habitDetails.value = null }
+                } else {
+                    val completedDates = remember(habitLogs) { habitLogs.filter { it.isCompleted }.map { it.date }.toSet() }
+                    val todayStr = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
+                    HabitDetailsSheet(
+                        habit = habit,
+                        logs = habitLogs,
+                        currentStreak = remember(habit, completedDates) { viewModel.repository.currentStreak(habit, completedDates, todayStr) },
+                        bestStreak = remember(habit, completedDates) { viewModel.repository.bestStreak(habit, completedDates) },
+                        onToggleDate = { date -> viewModel.toggleHabitOnDate(habit, date) },
+                        onEdit = {
+                            viewModel.habitDetails.value = null
+                            viewModel.editingHabit.value = habit
+                        },
+                        onDismiss = { viewModel.habitDetails.value = null }
+                    )
+                }
             }
 
             // Create / edit habit sheet

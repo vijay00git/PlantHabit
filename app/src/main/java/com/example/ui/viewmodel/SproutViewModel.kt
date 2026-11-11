@@ -155,6 +155,17 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /** Habit whose details/history sheet is open (null = closed). */
+    val habitDetails = MutableStateFlow<HabitEntity?>(null)
+
+    /** Toggle a habit on any date (used by the history calendar to fill in missed days). */
+    fun toggleHabitOnDate(habit: HabitEntity, date: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.toggleHabitCompleted(habit, date)
+            refreshAnalytics()
+        }
+    }
+
     /** Habit currently open in the editor sheet (null = closed). */
     val editingHabit = MutableStateFlow<HabitEntity?>(null)
 

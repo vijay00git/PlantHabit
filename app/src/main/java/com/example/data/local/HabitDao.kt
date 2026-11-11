@@ -55,6 +55,9 @@ interface HabitDao {
     @Query("SELECT * FROM habit_logs WHERE habitId = :habitId ORDER BY date DESC")
     suspend fun getLogsForHabit(habitId: Long): List<HabitLogEntity>
 
+    @Query("SELECT * FROM habit_logs WHERE habitId = :habitId ORDER BY date DESC")
+    fun getLogsForHabitFlow(habitId: Long): Flow<List<HabitLogEntity>>
+
     @Query("SELECT * FROM habit_logs ORDER BY date DESC")
     fun getAllLogsFlow(): Flow<List<HabitLogEntity>>
 
