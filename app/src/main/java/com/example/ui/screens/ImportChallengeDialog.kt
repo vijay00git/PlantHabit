@@ -1,5 +1,11 @@
 package com.example.ui.screens
 
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import coil.compose.AsyncImage
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -70,7 +76,7 @@ import com.example.ui.theme.leafGradient
 fun ImportChallengeDialog(
     initialJson: String = "",
     onDismiss: () -> Unit,
-    onImport: (String) -> Unit,
+    onImport: (json: String, bannerPhoto: Uri?) -> Unit,
     onOpenTemplate: () -> Unit
 ) {
     val context = LocalContext.current
@@ -80,6 +86,13 @@ fun ImportChallengeDialog(
     var parseError by remember { mutableStateOf<String?>(null) }
     var parsedTitle by remember { mutableStateOf<String?>(null) }
     var parsedHabitCount by remember { mutableStateOf(0) }
+    var bannerPhoto by remember { mutableStateOf<Uri?>(null) }
+    val bannerPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            haptics.success()
+            bannerPhoto = uri
+        }
+    }
 
     // Validate preview whenever text changes
     fun validateCurrentJson(text: String) {
@@ -224,13 +237,25 @@ fun ImportChallengeDialog(
                 }
             }
 
+            // Optional banner photo for the imported challenge
+            BannerPhotoPicker(
+                photo = bannerPhoto,
+                onPick = {
+                    bannerPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                onClear = {
+                    haptics.tick()
+                    bannerPhoto = null
+                }
+            )
+
             // Import Button
             ChallengeGradientButton(
                 text = "Import & Start Challenge",
                 icon = Icons.Default.RocketLaunch,
                 onClick = {
                     if (jsonText.isNotBlank()) {
-                        onImport(jsonText.trim())
+                        onImport(jsonText.trim(), bannerPhoto)
                     }
                 },
                 enabled = jsonText.isNotBlank() && parseError == null,
@@ -239,6 +264,85 @@ fun ImportChallengeDialog(
                     .testTag("btn_submit_import_challenge")
             )
         }
+    }
+}
+
+/** Empty "add photo" slot, or a preview of the chosen photo with change/remove actions. */
+@Composable
+private fun BannerPhotoPicker(
+    photo: Uri?,
+    onPick: () -> Unit,
+    onClear: () -> Unit,
+) {
+    val c = PlantTheme.colors
+    AnimatedContent(
+        targetState = photo,
+        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(150)) },
+        label = "bannerPicker"
+    ) { current ->
+        if (current == null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .bounceClick(onClick = onPick)
+                    .clip(AppShapes.medium)
+                    .background(c.cardMuted)
+                    .border(1.dp, c.border, AppShapes.medium)
+                    .padding(14.dp)
+                    .testTag("btn_import_pick_banner"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                IconBubble(background = c.skySoft, size = 40.dp) {
+                    Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = c.sky, modifier = Modifier.size(20.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Add a banner photo", style = MaterialTheme.typography.titleSmall, color = c.textPrimary)
+                    Text(
+                        "Optional · shown on the challenge card and details",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = c.textSecondary
+                    )
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(AppShapes.medium)
+            ) {
+                AsyncImage(
+                    model = current,
+                    contentDescription = "Selected banner photo",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    PhotoOverlayButton(Icons.Default.AddPhotoAlternate, "Change banner photo", onPick)
+                    PhotoOverlayButton(Icons.Default.Close, "Remove banner photo", onClear)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoOverlayButton(icon: ImageVector, description: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .bounceClick(onClick = onClick)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.45f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = description, tint = Color.White, modifier = Modifier.size(18.dp))
     }
 }
 

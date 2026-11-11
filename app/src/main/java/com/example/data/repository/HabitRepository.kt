@@ -213,10 +213,20 @@ class HabitRepository(
     }
 
     suspend fun importChallengeWithHabits(challenge: ChallengeEntity, habits: List<HabitEntity>) {
-        habitDao.insertChallenges(listOf(challenge))
+        // Re-importing a challenge with the same id keeps any banner photo already attached.
+        val existingBanner = habitDao.getChallengeById(challenge.id)?.bannerResName
+        habitDao.insertChallenges(listOf(challenge.copy(bannerResName = challenge.bannerResName ?: existingBanner)))
         habits.forEach { habit ->
             createHabit(habit)
         }
+    }
+
+    /** Sets (or clears, with null) a challenge's banner reference. Returns the previous one. */
+    suspend fun setChallengeBanner(challengeId: String, bannerRef: String?): Pair<String?, ChallengeEntity?> {
+        val existing = habitDao.getChallengeById(challengeId) ?: return null to null
+        val updated = existing.copy(bannerResName = bannerRef)
+        habitDao.updateChallenge(updated)
+        return existing.bannerResName to updated
     }
 
     suspend fun getDeepAnalytics(): AnalyticsData {

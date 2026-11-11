@@ -3,6 +3,8 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import android.net.Uri
+import com.example.data.local.BannerStorage
 import com.example.data.local.SproutDatabase
 import com.example.data.local.SproutPreferences
 import com.example.data.model.CalendarEventItem
@@ -28,7 +30,6 @@ import java.util.Locale
 enum class BottomTab {
     TODAY,
     PLAN,
-    AI,
     CHALLENGES
 }
 
@@ -80,7 +81,6 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
     val isFocusModeOpen = MutableStateFlow(false)
     val isImportChallengeOpen = MutableStateFlow(false)
     val isTemplateDownloadOpen = MutableStateFlow(false)
-    val isAiPlannerOpen = MutableStateFlow(false)
     val selectedChallengeForDetails = MutableStateFlow<com.example.data.model.ChallengeEntity?>(null)
 
     val moodLogs: StateFlow<List<com.example.data.model.MoodLogEntity>> = repository.moodLogsFlow
@@ -210,12 +210,40 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun importChallengeFromJson(jsonString: String, onResult: (Boolean, String) -> Unit) {
+    /**
+     * Attaches a photo banner to a challenge (or removes it when [photo] is null).
+     * The photo is copied into app storage; the previous custom banner file is deleted.
+     */
+    fun setChallengeBanner(challengeId: String, photo: Uri?, onResult: (Boolean, String) -> Unit = { _, _ -> }) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            try {
+                val newRef = photo?.let { BannerStorage.save(context, challengeId, it) }
+                val (oldRef, updated) = repository.setChallengeBanner(challengeId, newRef)
+                if (updated == null) {
+                    BannerStorage.delete(context, newRef)
+                    onResult(false, "Challenge not found")
+                    return@launch
+                }
+                if (oldRef != newRef) BannerStorage.delete(context, oldRef)
+                // Keep an open details dialog in sync with the new banner.
+                if (selectedChallengeForDetails.value?.id == challengeId) {
+                    selectedChallengeForDetails.value = updated
+                }
+                onResult(true, if (photo != null) "Banner photo updated 📸" else "Banner photo removed")
+            } catch (e: Exception) {
+                onResult(false, "Couldn't use that photo: ${e.localizedMessage ?: "unknown error"}")
+            }
+        }
+    }
+
+    fun importChallengeFromJson(jsonString: String, bannerPhoto: Uri? = null, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val parseResult = com.example.data.repository.ChallengeJsonManager.parseChallengeJson(jsonString)
             parseResult.fold(
                 onSuccess = { (challenge, habits) ->
                     repository.importChallengeWithHabits(challenge, habits)
+                    if (bannerPhoto != null) setChallengeBanner(challenge.id, bannerPhoto)
                     refreshAnalytics()
                     onResult(true, "Successfully imported '${challenge.title}' with ${habits.size} habits! 🏆")
                 },

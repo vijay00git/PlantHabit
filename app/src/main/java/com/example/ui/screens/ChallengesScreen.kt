@@ -67,6 +67,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.data.model.ChallengeEntity
+import com.example.ui.components.BannerSource
+import com.example.ui.components.ChallengeBannerImage
+import com.example.ui.components.rememberBannerSource
 import com.example.ui.components.EmptyState
 import com.example.ui.components.IconBubble
 import com.example.ui.components.PlantCard
@@ -447,15 +450,6 @@ fun ChallengesScreen(
 /* Pieces                                                                                       */
 /* ------------------------------------------------------------------------------------------ */
 
-/** Photo used for a challenge's hero/header, if it has one. */
-internal fun challengePhotoRes(challenge: ChallengeEntity): Int? = when (challenge.id) {
-    "gratitude_month", "relationship_week" -> R.drawable.challenge_gratitude
-    else -> when (challenge.category.trim().lowercase()) {
-        "routine", "mindfulness" -> R.drawable.routine_morning
-        else -> null
-    }
-}
-
 /** Icon representing a challenge category. */
 internal fun challengeCategoryIcon(category: String): ImageVector = when (category.trim().lowercase()) {
     "mindfulness", "mind", "meditation", "mental" -> Icons.Default.SelfImprovement
@@ -621,11 +615,10 @@ private fun FeaturedHeroCard(
             .clip(AppShapes.xl)
             .testTag("banner_gratitude_month")
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.challenge_gratitude),
-            contentDescription = "Gratitude Month Banner",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+        ChallengeBannerImage(
+            source = rememberBannerSource(challenge) ?: BannerSource.Bundled(R.drawable.challenge_gratitude),
+            contentDescription = "${challenge.title} banner",
+            modifier = Modifier.fillMaxSize()
         )
         // Photo scrim: keeps white text legible on any image.
         Box(
@@ -738,6 +731,18 @@ private fun ActiveChallengeCard(
         onClick = onClick,
         contentPadding = 16.dp
     ) {
+        // Only photos the user attached; built-in stock photos stay on the featured cards.
+        (rememberBannerSource(challenge) as? BannerSource.Photo)?.let { banner ->
+            ChallengeBannerImage(
+                source = banner,
+                contentDescription = "${challenge.title} banner",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(AppShapes.medium)
+            )
+            Spacer(Modifier.height(14.dp))
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -864,11 +869,10 @@ private fun PhotoChallengeCard(
             .bounceClick(pressedScale = 0.98f, onClick = onClick)
             .clip(AppShapes.large)
     ) {
-        Image(
-            painter = painterResource(id = challengePhotoRes(challenge) ?: R.drawable.challenge_gratitude),
+        ChallengeBannerImage(
+            source = rememberBannerSource(challenge) ?: BannerSource.Bundled(R.drawable.challenge_gratitude),
             contentDescription = challenge.title,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            modifier = Modifier.fillMaxSize()
         )
         Box(
             modifier = Modifier
@@ -942,6 +946,18 @@ private fun DiscoverChallengeCard(
         onClick = onClick,
         contentPadding = 16.dp
     ) {
+        // Only photos the user attached; built-in stock photos stay on the featured cards.
+        (rememberBannerSource(challenge) as? BannerSource.Photo)?.let { banner ->
+            ChallengeBannerImage(
+                source = banner,
+                contentDescription = "${challenge.title} banner",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(AppShapes.medium)
+            )
+            Spacer(Modifier.height(14.dp))
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,

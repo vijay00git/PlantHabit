@@ -1,5 +1,12 @@
 package com.example.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.data.local.BannerStorage
+import com.example.ui.components.ChallengeBannerImage
+import com.example.ui.components.rememberBannerSource
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,7 +26,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DirectionsWalk
@@ -57,6 +66,7 @@ import com.example.data.model.ChallengeEntity
 import com.example.data.model.ChallengeTaskItem
 import com.example.ui.components.CelebrationBurst
 import com.example.ui.components.IconBubble
+import com.example.ui.components.bounceClick
 import com.example.ui.components.ProgressRing
 import com.example.ui.components.rememberHaptics
 import com.example.ui.components.staggeredEntrance
@@ -77,7 +87,9 @@ fun ChallengeDetailsDialog(
     challenge: ChallengeEntity,
     onAccept: () -> Unit,
     onLeave: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onPickBanner: (Uri) -> Unit = {},
+    onRemoveBanner: () -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
@@ -132,6 +144,8 @@ fun ChallengeDetailsDialog(
                 DetailsHeader(
                     challenge = challenge,
                     accent = accent,
+                    onPickBanner = onPickBanner,
+                    onRemoveBanner = onRemoveBanner,
                     onClose = { if (!accepting) onDismiss() }
                 )
 
@@ -335,10 +349,21 @@ fun ChallengeDetailsDialog(
 private fun DetailsHeader(
     challenge: ChallengeEntity,
     accent: AccentPair,
+    onPickBanner: (Uri) -> Unit,
+    onRemoveBanner: () -> Unit,
     onClose: () -> Unit,
 ) {
     val c = PlantTheme.colors
-    val photo = challengePhotoRes(challenge)
+    val haptics = rememberHaptics()
+    val photo = rememberBannerSource(challenge)
+    val isCustomPhoto = BannerStorage.isCustom(challenge.bannerResName) && photo != null
+    // System photo picker: no storage permission needed.
+    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            haptics.success()
+            onPickBanner(uri)
+        }
+    }
     val fallbackBrush: Brush = when (challenge.category.trim().lowercase()) {
         "fitness", "exercise", "sport", "movement", "routine" -> c.sunriseGradient
         "mindfulness", "mind", "meditation", "mental" -> c.dreamGradient
@@ -351,11 +376,10 @@ private fun DetailsHeader(
             .height(190.dp)
     ) {
         if (photo != null) {
-            Image(
-                painter = painterResource(id = photo),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+            ChallengeBannerImage(
+                source = photo,
+                contentDescription = "${challenge.title} banner",
+                modifier = Modifier.fillMaxSize()
             )
         } else {
             Box(
@@ -389,6 +413,34 @@ private fun DetailsHeader(
                     )
                 )
         )
+
+        // Banner photo actions
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            BannerActionPill(
+                icon = Icons.Default.AddPhotoAlternate,
+                text = if (photo == null) "Add banner photo" else "Change photo",
+                onClick = {
+                    pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                modifier = Modifier.testTag("btn_pick_banner")
+            )
+            if (isCustomPhoto) {
+                BannerActionPill(
+                    icon = Icons.Default.Delete,
+                    text = "Remove",
+                    onClick = {
+                        haptics.reject()
+                        onRemoveBanner()
+                    },
+                    modifier = Modifier.testTag("btn_remove_banner")
+                )
+            }
+        }
 
         ChallengeCloseButton(
             onClick = onClose,
@@ -429,6 +481,29 @@ private fun DetailsHeader(
                 )
             }
         }
+    }
+}
+
+/** Frosted pill button that reads well over any photo or gradient. */
+@Composable
+private fun BannerActionPill(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .bounceClick(onClick = onClick)
+            .clip(AppShapes.pill)
+            .background(Color.Black.copy(alpha = 0.38f))
+            .border(1.dp, Color.White.copy(alpha = 0.35f), AppShapes.pill)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+        Text(text = text, style = MaterialTheme.typography.labelMedium, color = Color.White)
     }
 }
 

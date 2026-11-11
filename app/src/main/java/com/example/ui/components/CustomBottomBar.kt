@@ -25,9 +25,9 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -60,8 +60,7 @@ private const val SlotCount = 5 // 4 tabs + centre add button
 private fun BottomTab.slotIndex(): Int = when (this) {
     BottomTab.TODAY -> 0
     BottomTab.PLAN -> 1
-    BottomTab.AI -> 3
-    BottomTab.CHALLENGES -> 4
+    BottomTab.CHALLENGES -> 3
 }
 
 @Composable
@@ -69,6 +68,7 @@ fun CustomBottomBar(
     currentTab: BottomTab,
     onTabSelected: (BottomTab) -> Unit,
     onAddHabitClick: () -> Unit,
+    onOpenStats: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val c = PlantTheme.colors
@@ -138,19 +138,20 @@ fun CustomBottomBar(
                 Box(modifier = Modifier.weight(1f))
 
                 BottomNavItem(
-                    icon = Icons.Default.AutoAwesome,
-                    label = "AI",
-                    isSelected = currentTab == BottomTab.AI,
-                    onClick = { onTabSelected(BottomTab.AI) },
-                    testTag = "nav_ai",
-                    modifier = Modifier.weight(1f)
-                )
-                BottomNavItem(
                     icon = Icons.Default.EmojiEvents,
                     label = "Challenges",
                     isSelected = currentTab == BottomTab.CHALLENGES,
                     onClick = { onTabSelected(BottomTab.CHALLENGES) },
                     testTag = "nav_challenges",
+                    modifier = Modifier.weight(1f)
+                )
+                // Stats opens the analytics overlay (not a tab, so no indicator)
+                BottomNavItem(
+                    icon = Icons.Default.Insights,
+                    label = "Stats",
+                    isSelected = false,
+                    onClick = onOpenStats,
+                    testTag = "nav_stats",
                     modifier = Modifier.weight(1f)
                 )
             }

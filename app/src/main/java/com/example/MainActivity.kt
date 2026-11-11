@@ -45,8 +45,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.service.NotificationHelper
 import com.example.ui.components.CustomBottomBar
-import com.example.ui.screens.AiCoachScreen
-import com.example.ui.screens.AiNaturalLanguagePlannerDialog
 import com.example.ui.screens.AnalyticsScreen
 import com.example.ui.screens.ChallengeDetailsDialog
 import com.example.ui.screens.ChallengesScreen
@@ -113,7 +111,6 @@ fun SproutApp(viewModel: SproutViewModel) {
     val isFocusModeOpen by viewModel.isFocusModeOpen.collectAsState()
     val isImportChallengeOpen by viewModel.isImportChallengeOpen.collectAsState()
     val isTemplateDownloadOpen by viewModel.isTemplateDownloadOpen.collectAsState()
-    val isAiPlannerOpen by viewModel.isAiPlannerOpen.collectAsState()
     val selectedChallengeForDetails by viewModel.selectedChallengeForDetails.collectAsState()
 
     var templateDraft by remember { mutableStateOf("") }
@@ -155,7 +152,6 @@ fun SproutApp(viewModel: SproutViewModel) {
     // Handle Back Button
     BackHandler(
         enabled = selectedChallengeForDetails != null ||
-                isAiPlannerOpen ||
                 isAnalyticsOpen ||
                 isSettingsOpen ||
                 isFocusModeOpen ||
@@ -165,7 +161,6 @@ fun SproutApp(viewModel: SproutViewModel) {
     ) {
         when {
             selectedChallengeForDetails != null -> viewModel.closeChallengeDetails()
-            isAiPlannerOpen -> viewModel.isAiPlannerOpen.value = false
             isAnalyticsOpen -> viewModel.isAnalyticsOpen.value = false
             isSettingsOpen -> viewModel.isSettingsOpen.value = false
             isFocusModeOpen -> viewModel.isFocusModeOpen.value = false
@@ -189,7 +184,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                 CustomBottomBar(
                     currentTab = currentTab,
                     onTabSelected = { viewModel.setCurrentTab(it) },
-                    onAddHabitClick = { viewModel.isCreateHabitOpen.value = true }
+                    onAddHabitClick = { viewModel.isCreateHabitOpen.value = true },
+                    onOpenStats = { viewModel.isAnalyticsOpen.value = true }
                 )
             }
         }
@@ -284,27 +280,6 @@ fun SproutApp(viewModel: SproutViewModel) {
                     )
                 }
 
-                BottomTab.AI -> {
-                    AiCoachScreen(
-                        onAdoptRecommendation = { rec ->
-                            viewModel.createHabit(
-                                title = rec.habitName,
-                                category = rec.category,
-                                timeOfDay = rec.timeOfDay,
-                                scheduledTime = rec.scheduledTime,
-                                targetValue = 1,
-                                unit = "tasks",
-                                reminderEnabled = true,
-                                syncGoogleCalendar = true
-                            )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Added '${rec.habitName}' to your routine! 🌱")
-                            }
-                        },
-                        onOpenAiPlanner = { viewModel.isAiPlannerOpen.value = true }
-                    )
-                }
-
                 BottomTab.CHALLENGES -> {
                     ChallengesScreen(
                         challenges = challenges,
@@ -341,27 +316,15 @@ fun SproutApp(viewModel: SproutViewModel) {
                             snackbarHostState.showSnackbar("Left challenge and cleared linked habits.")
                         }
                     },
-                    onDismiss = { viewModel.closeChallengeDetails() }
-                )
-            }
-
-            // Natural Language Routine Planner Dialog (Screenshot 2: Type or speak plans)
-            if (isAiPlannerOpen) {
-                AiNaturalLanguagePlannerDialog(
-                    onDismiss = { viewModel.isAiPlannerOpen.value = false },
-                    onAddPlannedHabit = { title, cat, time, target, unit ->
-                        viewModel.createHabit(
-                            title = title,
-                            category = cat,
-                            timeOfDay = "ANYTIME",
-                            scheduledTime = time,
-                            targetValue = target,
-                            unit = unit,
-                            reminderEnabled = true,
-                            syncGoogleCalendar = true
-                        )
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Planted '$title' into routine! 🌱")
+                    onDismiss = { viewModel.closeChallengeDetails() },
+                    onPickBanner = { uri ->
+                        viewModel.setChallengeBanner(challenge.id, uri) { _, message ->
+                            coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+                        }
+                    },
+                    onRemoveBanner = {
+                        viewModel.setChallengeBanner(challenge.id, null) { _, message ->
+                            coroutineScope.launch { snackbarHostState.showSnackbar(message) }
                         }
                     }
                 )
@@ -419,8 +382,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                         viewModel.isImportChallengeOpen.value = false
                         templateDraft = ""
                     },
-                    onImport = { json ->
-                        viewModel.importChallengeFromJson(json) { success, message ->
+                    onImport = { json, bannerPhoto ->
+                        viewModel.importChallengeFromJson(json, bannerPhoto) { success, message ->
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar(message)
                                 if (success) {
