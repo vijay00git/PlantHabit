@@ -113,7 +113,8 @@ fun SproutApp(viewModel: SproutViewModel) {
     val calendars by viewModel.calendars.collectAsState()
     val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
     val targetCalendarId by viewModel.targetCalendarId.collectAsState()
-    val isAnalyticsOpen by viewModel.isAnalyticsOpen.collectAsState()
+    val allHabits by viewModel.allHabits.collectAsState()
+    val allLogs by viewModel.allLogs.collectAsState()
     val isSettingsOpen by viewModel.isSettingsOpen.collectAsState()
     val isFocusModeOpen by viewModel.isFocusModeOpen.collectAsState()
     val isImportChallengeOpen by viewModel.isImportChallengeOpen.collectAsState()
@@ -183,7 +184,6 @@ fun SproutApp(viewModel: SproutViewModel) {
     // Handle Back Button
     BackHandler(
         enabled = selectedChallengeForDetails != null ||
-                isAnalyticsOpen ||
                 isSettingsOpen ||
                 isFocusModeOpen ||
                 isImportChallengeOpen ||
@@ -192,7 +192,6 @@ fun SproutApp(viewModel: SproutViewModel) {
     ) {
         when {
             selectedChallengeForDetails != null -> viewModel.closeChallengeDetails()
-            isAnalyticsOpen -> viewModel.isAnalyticsOpen.value = false
             isSettingsOpen -> viewModel.isSettingsOpen.value = false
             isFocusModeOpen -> viewModel.isFocusModeOpen.value = false
             isImportChallengeOpen -> viewModel.isImportChallengeOpen.value = false
@@ -208,15 +207,14 @@ fun SproutApp(viewModel: SproutViewModel) {
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             AnimatedVisibility(
-                visible = !isAnalyticsOpen && !isFocusModeOpen && selectedChallengeForDetails == null,
+                visible = !isFocusModeOpen && selectedChallengeForDetails == null,
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut()
             ) {
                 CustomBottomBar(
                     currentTab = currentTab,
                     onTabSelected = { viewModel.setCurrentTab(it) },
-                    onAddHabitClick = { viewModel.isCreateHabitOpen.value = true },
-                    onOpenStats = { viewModel.isAnalyticsOpen.value = true }
+                    onAddHabitClick = { viewModel.isCreateHabitOpen.value = true }
                 )
             }
         }
@@ -250,16 +248,6 @@ fun SproutApp(viewModel: SproutViewModel) {
                         onOpenHabitDetails = { viewModel.habitDetails.value = it },
                         onIncrementHabit = { habitWithStatus, amount ->
                             viewModel.incrementHabitProgress(habitWithStatus.habit, amount)
-                        },
-                        onOpenAnalytics = { viewModel.isAnalyticsOpen.value = true },
-                        onOpenSettings = { viewModel.isSettingsOpen.value = true },
-                        onOpenCalendarSync = {
-                            calendarPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.READ_CALENDAR,
-                                    Manifest.permission.WRITE_CALENDAR
-                                )
-                            )
                         },
                         onOpenFocusMode = { viewModel.isFocusModeOpen.value = true },
                         activeStreakDays = analyticsData?.activeStreakDays ?: 0,
@@ -312,6 +300,17 @@ fun SproutApp(viewModel: SproutViewModel) {
                         },
                         onAddTaskClick = { viewModel.isCreateHabitOpen.value = true },
                         onOpenHabitDetails = { viewModel.habitDetails.value = it }
+                    )
+                }
+
+                BottomTab.STATS -> {
+                    LaunchedEffect(Unit) { viewModel.refreshAnalytics() }
+                    AnalyticsScreen(
+                        analyticsData = analyticsData,
+                        habits = allHabits,
+                        logs = allLogs,
+                        onOpenSettings = { viewModel.isSettingsOpen.value = true },
+                        onOpenHabit = { viewModel.habitDetails.value = it }
                     )
                 }
 
@@ -377,17 +376,6 @@ fun SproutApp(viewModel: SproutViewModel) {
                 )
             }
 
-            // Visual Analytics Overlay
-            AnimatedVisibility(
-                visible = isAnalyticsOpen,
-                enter = slideInVertically(tween(380)) { it / 3 } + fadeIn(tween(300)),
-                exit = slideOutVertically(tween(260)) { it / 3 } + fadeOut(tween(220))
-            ) {
-                AnalyticsScreen(
-                    analyticsData = analyticsData,
-                    onClose = { viewModel.isAnalyticsOpen.value = false }
-                )
-            }
 
             // Focus Mode Dialog
             if (isFocusModeOpen) {

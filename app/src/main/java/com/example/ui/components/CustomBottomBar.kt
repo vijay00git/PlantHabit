@@ -61,6 +61,7 @@ private fun BottomTab.slotIndex(): Int = when (this) {
     BottomTab.TODAY -> 0
     BottomTab.PLAN -> 1
     BottomTab.CHALLENGES -> 3
+    BottomTab.STATS -> 4
 }
 
 @Composable
@@ -68,7 +69,6 @@ fun CustomBottomBar(
     currentTab: BottomTab,
     onTabSelected: (BottomTab) -> Unit,
     onAddHabitClick: () -> Unit,
-    onOpenStats: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val c = PlantTheme.colors
@@ -145,12 +145,11 @@ fun CustomBottomBar(
                     testTag = "nav_challenges",
                     modifier = Modifier.weight(1f)
                 )
-                // Stats opens the analytics overlay (not a tab, so no indicator)
                 BottomNavItem(
                     icon = Icons.Default.Insights,
                     label = "Stats",
-                    isSelected = false,
-                    onClick = onOpenStats,
+                    isSelected = currentTab == BottomTab.STATS,
+                    onClick = { onTabSelected(BottomTab.STATS) },
                     testTag = "nav_stats",
                     modifier = Modifier.weight(1f)
                 )

@@ -30,7 +30,8 @@ import java.util.Locale
 enum class BottomTab {
     TODAY,
     PLAN,
-    CHALLENGES
+    CHALLENGES,
+    STATS
 }
 
 class SproutViewModel(application: Application) : AndroidViewModel(application) {
@@ -76,7 +77,11 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
 
     // Dialog & overlay states
     val isCreateHabitOpen = MutableStateFlow(false)
-    val isAnalyticsOpen = MutableStateFlow(false)
+    /** All habits and all check-ins, for the Stats heat maps. */
+    val allHabits: StateFlow<List<HabitEntity>> = db.habitDao().getAllHabitsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val allLogs: StateFlow<List<com.example.data.model.HabitLogEntity>> = db.habitDao().getAllLogsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val isSettingsOpen = MutableStateFlow(false)
     val isFocusModeOpen = MutableStateFlow(false)
     val isImportChallengeOpen = MutableStateFlow(false)

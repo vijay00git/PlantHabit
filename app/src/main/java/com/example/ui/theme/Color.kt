@@ -137,10 +137,11 @@ data class AccentPair(val color: Color, val soft: Color)
 
 /** Stable colour per habit category, so every screen colours a category the same way. */
 fun AppColors.categoryColors(category: String): AccentPair = when (category.trim().lowercase()) {
-    "health", "nutrition", "hydration", "water" -> AccentPair(sky, skySoft)
+    "health", "hydration", "water" -> AccentPair(sky, skySoft)
     "fitness", "exercise", "sport", "movement" -> AccentPair(sunrise, sunriseSoft)
-    "mindfulness", "mind", "meditation", "mental" -> AccentPair(lavender, lavenderSoft)
-    "productivity", "work", "learning", "study" -> AccentPair(sun, sunSoft)
-    "social", "relationships", "love", "self care", "self-care" -> AccentPair(berry, berrySoft)
-    else -> AccentPair(primary, primarySoft)
+    "mindfulness", "mind", "meditation", "mental", "sleep" -> AccentPair(lavender, lavenderSoft)
+    "productivity", "work", "learning", "study", "finance", "money" -> AccentPair(sun, sunSoft)
+    "social", "people", "relationships", "love", "self care", "self-care", "creativity", "art" -> AccentPair(berry, berrySoft)
+    "home", "routine" -> AccentPair(sky, skySoft)
+    else -> AccentPair(primary, primarySoft) // nutrition, nature, other
 }

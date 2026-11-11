@@ -419,6 +419,9 @@ internal fun challengeCategoryIcon(category: String): ImageVector = when (catego
     "productivity", "work" -> Icons.Default.Bolt
     "learning", "study", "education" -> Icons.Default.School
     "home", "declutter" -> Icons.Default.Inventory2
+    "sleep" -> AppIcon.BED.vector
+    "creativity", "art" -> AppIcon.ART.vector
+    "self-care", "self care" -> AppIcon.SMILE.vector
     "nutrition", "food", "diet" -> Icons.Default.Restaurant
     else -> Icons.Default.Spa
 }

@@ -110,14 +110,24 @@ private val timeOfDayOptions = listOf(
     TimeOfDayOption("EVENING", "Evening", Icons.Default.Bedtime),
 )
 
-private fun categoryIcon(category: String): ImageVector = when (category) {
-    "Health" -> Icons.Default.Favorite
-    "Mindfulness" -> Icons.Default.SelfImprovement
-    "Fitness" -> Icons.Default.FitnessCenter
-    "Productivity" -> Icons.Default.Bolt
-    "Learning" -> AppIcon.STUDY.vector
-    else -> AppIcon.SPARKLE.vector
-}
+/** Categories offered in the habit sheet, with their icons. */
+internal val HABIT_CATEGORIES = listOf(
+    "Health" to AppIcon.HEART,
+    "Fitness" to AppIcon.GYM,
+    "Mindfulness" to AppIcon.MEDITATE,
+    "Sleep" to AppIcon.BED,
+    "Nutrition" to AppIcon.FOOD,
+    "Productivity" to AppIcon.FOCUS,
+    "Learning" to AppIcon.STUDY,
+    "Finance" to AppIcon.SAVINGS,
+    "Social" to AppIcon.PEOPLE,
+    "Creativity" to AppIcon.ART,
+    "Home" to AppIcon.CLEAN,
+    "Self-care" to AppIcon.SMILE,
+)
+
+private fun categoryIcon(category: String): ImageVector =
+    HABIT_CATEGORIES.firstOrNull { it.first.equals(category, ignoreCase = true) }?.second?.vector ?: AppIcon.SPARKLE.vector
 
 /** Sensible stepper increment per unit, so "ml" or "steps" don't need hundreds of taps. */
 private fun stepFor(unit: String): Int = when (unit) {
@@ -175,7 +185,7 @@ fun CreateHabitDialog(
     var confirmDelete by remember { mutableStateOf(false) }
 
     // Keep categories/units an existing habit uses even if they're not in the default lists
-    val categories = (listOf("Health", "Mindfulness", "Fitness", "Productivity", "Learning") + listOfNotNull(initial?.category)).distinct()
+    val categories = (HABIT_CATEGORIES.map { it.first } + listOfNotNull(initial?.category)).distinct()
     val units = (listOf("tasks", "ml", "steps", "mins", "pages", "km", "glasses") + listOfNotNull(initial?.unit)).distinct()
     val canSave = title.isNotBlank() && days.isNotEmpty() && !isSaving
 

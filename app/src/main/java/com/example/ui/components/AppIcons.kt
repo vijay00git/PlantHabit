@@ -141,6 +141,11 @@ enum class AppIcon(val key: String, val vector: ImageVector) {
                     "mindfulness" -> MEDITATE
                     "productivity" -> FOCUS
                     "learning" -> STUDY
+                    "sleep" -> BED
+                    "nutrition" -> FOOD
+                    "creativity" -> ART
+                    "home" -> CLEAN
+                    "self-care", "self care" -> SMILE
                     "finance" -> SAVINGS
                     "people", "social", "relationships" -> PEOPLE
                     else -> SPARKLE

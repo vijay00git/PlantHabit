@@ -1,5 +1,9 @@
 package com.example.ui.screens
 
+import com.example.ui.components.HabitHeatmaps
+import com.example.data.model.HabitLogEntity
+import com.example.data.model.HabitEntity
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -88,8 +92,11 @@ import kotlinx.coroutines.delay
 @Composable
 fun AnalyticsScreen(
     analyticsData: AnalyticsData?,
-    onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+    habits: List<HabitEntity> = emptyList(),
+    logs: List<HabitLogEntity> = emptyList(),
+    onOpenHabit: (HabitEntity) -> Unit = {},
 ) {
     val c = PlantTheme.colors
     // Shown for the moment before real analytics load
@@ -119,7 +126,7 @@ fun AnalyticsScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 60.dp)
+            contentPadding = PaddingValues(bottom = 110.dp)
         ) {
             // Top Header
             item {
@@ -132,12 +139,12 @@ fun AnalyticsScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Visual Statistics",
+                            text = "Stats",
                             style = MaterialTheme.typography.headlineMedium,
                             color = c.textPrimary
                         )
                         Text(
-                            text = "Consistency & Deep Habit Analytics",
+                            text = "Your consistency, streaks and history",
                             style = MaterialTheme.typography.bodyMedium,
                             color = c.textSecondary
                         )
@@ -146,16 +153,16 @@ fun AnalyticsScreen(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .bounceClick(pressedScale = 0.88f) { onClose() }
+                            .bounceClick(pressedScale = 0.88f) { onOpenSettings() }
                             .clip(CircleShape)
                             .background(c.card)
                             .border(1.dp, c.border, CircleShape)
-                            .testTag("btn_close_analytics"),
+                            .testTag("btn_settings"),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
                             tint = c.textPrimary,
                             modifier = Modifier.size(18.dp)
                         )
@@ -171,6 +178,19 @@ fun AnalyticsScreen(
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                         .staggeredEntrance(0)
                 )
+            }
+
+            // Per-habit monthly heat maps
+            item(key = "heatmaps") {
+                PlantCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .staggeredEntrance(1),
+                    contentPadding = 16.dp
+                ) {
+                    HabitHeatmaps(habits = habits, logs = logs, onOpenHabit = onOpenHabit)
+                }
             }
 
             // Stat tiles

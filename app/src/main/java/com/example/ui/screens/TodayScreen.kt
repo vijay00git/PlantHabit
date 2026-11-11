@@ -81,9 +81,6 @@ fun TodayScreen(
     onToggleHabit: (HabitWithStatus) -> Unit,
     onOpenHabitDetails: (com.example.data.model.HabitEntity) -> Unit = {},
     onIncrementHabit: (HabitWithStatus, Int) -> Unit,
-    onOpenAnalytics: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenCalendarSync: () -> Unit,
     onOpenFocusMode: () -> Unit,
     activeStreakDays: Int,
     currentMood: MoodLogEntity? = null,
@@ -167,24 +164,6 @@ fun TodayScreen(
                             description = "Focus Mode",
                             onClick = onOpenFocusMode,
                             testTag = "btn_focus_mode"
-                        )
-                        HeaderIconButton(
-                            icon = Icons.Default.BarChart,
-                            description = "Visual Statistics",
-                            onClick = onOpenAnalytics,
-                            testTag = "btn_statistics"
-                        )
-                        HeaderIconButton(
-                            icon = Icons.Default.CalendarMonth,
-                            description = "Calendar Sync",
-                            onClick = onOpenCalendarSync,
-                            testTag = "btn_calendar_sync"
-                        )
-                        HeaderIconButton(
-                            icon = Icons.Default.Settings,
-                            description = "Settings",
-                            onClick = onOpenSettings,
-                            testTag = "btn_settings"
                         )
                     }
                 }
