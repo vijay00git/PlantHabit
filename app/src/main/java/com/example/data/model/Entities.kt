@@ -66,7 +66,10 @@ data class HabitLogEntity(
     val progressValue: Int = 0,
     val isCompleted: Boolean = false,
     val completedAt: Long? = null,
-    val notes: String? = null
+    val notes: String? = null,
+    /** Progress just before the habit was completed, restored if the user un-ticks it. */
+    @ColumnInfo(defaultValue = "0")
+    val previousProgress: Int = 0
 )
 
 data class ChallengeTaskItem(
@@ -108,7 +111,10 @@ data class ChallengeEntity(
     val startedAt: Long = 0L,
     /** AppIcon key for this challenge; blank = use the category icon. */
     @ColumnInfo(defaultValue = "")
-    val icon: String = ""
+    val icon: String = "",
+    /** How many times the user has finished this challenge. */
+    @ColumnInfo(defaultValue = "0")
+    val timesCompleted: Int = 0
 ) {
     fun getParsedTasks(): List<ChallengeTaskItem> {
         val list = mutableListOf<ChallengeTaskItem>()

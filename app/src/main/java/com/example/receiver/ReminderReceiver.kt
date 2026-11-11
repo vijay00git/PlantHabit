@@ -67,10 +67,12 @@ class ReminderReceiver : BroadcastReceiver() {
                     val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                     val habit = db.habitDao().getHabitById(habitId) ?: return@launch
                     val existingLog = db.habitDao().getLogForHabitAndDate(habitId, today)
+                    if (existingLog?.isCompleted == true) return@launch
                     val updatedLog = existingLog?.copy(
-                        progressValue = habit.targetValue,
+                        progressValue = maxOf(habit.targetValue, existingLog.progressValue),
                         isCompleted = true,
-                        completedAt = System.currentTimeMillis()
+                        completedAt = System.currentTimeMillis(),
+                        previousProgress = existingLog.progressValue
                     ) ?: HabitLogEntity(
                         habitId = habitId,
                         date = today,

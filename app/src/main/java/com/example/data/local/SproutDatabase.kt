@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
         ChallengeEntity::class,
         MoodLogEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class SproutDatabase : RoomDatabase() {
@@ -38,7 +38,7 @@ abstract class SproutDatabase : RoomDatabase() {
                     SproutDatabase::class.java,
                     "sprout_habit_database"
                 )
-                    .addMigrations(MIGRATION_2_3)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
                     .build()
@@ -52,6 +52,14 @@ abstract class SproutDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE challenges ADD COLUMN startedAt INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE challenges ADD COLUMN icon TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        /** v4: undo restores progress; challenges count completions. Keeps all user data. */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habit_logs ADD COLUMN previousProgress INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE challenges ADD COLUMN timesCompleted INTEGER NOT NULL DEFAULT 0")
             }
         }
 

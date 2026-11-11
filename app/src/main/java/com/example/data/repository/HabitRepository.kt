@@ -130,19 +130,25 @@ class HabitRepository(
 
     suspend fun logHabitProgress(habit: HabitEntity, dateString: String, delta: Int): HabitLogEntity {
         val existingLog = habitDao.getLogForHabitAndDate(habit.id, dateString)
-        val newProgress = ((existingLog?.progressValue ?: 0) + delta).coerceAtLeast(0)
+        val oldProgress = existingLog?.progressValue ?: 0
+        val newProgress = (oldProgress + delta).coerceAtLeast(0)
         val isCompleted = newProgress >= habit.targetValue
+        // Remember where we were when this step completed the habit
+        val previous = if (isCompleted && existingLog?.isCompleted != true) oldProgress
+            else existingLog?.previousProgress ?: 0
 
         val updatedLog = existingLog?.copy(
             progressValue = newProgress,
             isCompleted = isCompleted,
-            completedAt = if (isCompleted) System.currentTimeMillis() else null
+            completedAt = if (isCompleted) System.currentTimeMillis() else null,
+            previousProgress = previous
         ) ?: HabitLogEntity(
             habitId = habit.id,
             date = dateString,
             progressValue = newProgress,
             isCompleted = isCompleted,
-            completedAt = if (isCompleted) System.currentTimeMillis() else null
+            completedAt = if (isCompleted) System.currentTimeMillis() else null,
+            previousProgress = previous
         )
 
         habitDao.insertOrUpdateLog(updatedLog)
@@ -155,18 +161,24 @@ class HabitRepository(
                 ((existingLog?.progressValue ?: 0) >= habit.targetValue && habit.targetValue > 0)
 
         val newCompleted = !currentlyCompleted
-        val newProgress = if (newCompleted) habit.targetValue else 0
+        val oldProgress = existingLog?.progressValue ?: 0
+        // Completing jumps to the target; un-ticking restores what was there before
+        val newProgress = if (newCompleted) maxOf(habit.targetValue, oldProgress)
+            else (existingLog?.previousProgress ?: 0).coerceIn(0, (habit.targetValue - 1).coerceAtLeast(0))
+        val previous = if (newCompleted) oldProgress else 0
 
         val updatedLog = existingLog?.copy(
             progressValue = newProgress,
             isCompleted = newCompleted,
-            completedAt = if (newCompleted) System.currentTimeMillis() else null
+            completedAt = if (newCompleted) System.currentTimeMillis() else null,
+            previousProgress = previous
         ) ?: HabitLogEntity(
             habitId = habit.id,
             date = dateString,
             progressValue = newProgress,
             isCompleted = newCompleted,
-            completedAt = if (newCompleted) System.currentTimeMillis() else null
+            completedAt = if (newCompleted) System.currentTimeMillis() else null,
+            previousProgress = previous
         )
 
         habitDao.insertOrUpdateLog(updatedLog)
