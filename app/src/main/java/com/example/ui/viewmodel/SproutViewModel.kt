@@ -335,21 +335,40 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun syncAllHabitsToCalendar() {
+    fun syncAllHabitsToCalendar(onDone: (Int) -> Unit = {}) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val count = repository.syncAllHabitsToCalendar()
+            loadCalendarEvents()
+            onDone(count)
+        }
+    }
+
+    // ---- Calendar selection ----
+    val calendars = MutableStateFlow<List<CalendarSyncManager.CalendarInfo>>(emptyList())
+    val shownCalendarIds = MutableStateFlow<Set<Long>?>(null)
+    val targetCalendarId = MutableStateFlow<Long?>(null)
+
+    fun loadCalendars() {
         viewModelScope.launch(Dispatchers.IO) {
             val context = getApplication<Application>()
-            val cal = Calendar.getInstance()
-            try {
-                val date = dateFormat.parse(_selectedDate.value)
-                if (date != null) cal.time = date
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            val habits = habitsWithStatus.value
-            for (h in habits) {
-                CalendarSyncManager.syncHabitToGoogleCalendar(context, h.habit, cal)
-            }
+            val list = CalendarSyncManager.listCalendars(context)
+            calendars.value = list
+            shownCalendarIds.value = CalendarSyncManager.getShownCalendarIds(context)
+            targetCalendarId.value = CalendarSyncManager.resolveTargetCalendarId(context, list)
+        }
+    }
+
+    /** Saves the calendar choice; habit events move to the new target calendar. */
+    fun saveCalendarChoice(shown: Set<Long>?, target: Long?, onDone: () -> Unit = {}) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            val targetChanged = target != CalendarSyncManager.resolveTargetCalendarId(context)
+            CalendarSyncManager.setShownCalendarIds(context, shown)
+            CalendarSyncManager.setTargetCalendarId(context, target)
+            if (targetChanged) repository.syncAllHabitsToCalendar()
+            loadCalendars()
             loadCalendarEvents()
+            onDone()
         }
     }
 

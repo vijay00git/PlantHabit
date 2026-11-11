@@ -234,9 +234,7 @@ class HabitRepository(
         if (createdHabit.reminderEnabled) {
             ReminderScheduler.scheduleHabitReminder(context, createdHabit)
         }
-        if (createdHabit.syncWithGoogleCalendar) {
-            CalendarSyncManager.syncHabitToGoogleCalendar(context, createdHabit, Calendar.getInstance())
-        }
+        syncCalendarEvent(createdHabit)
         return habitId
     }
 
@@ -247,10 +245,30 @@ class HabitRepository(
         } else {
             ReminderScheduler.cancelHabitReminder(context, habit.id)
         }
+        syncCalendarEvent(habit)
+    }
+
+    /** Keeps the habit's single recurring calendar event in line with its settings. */
+    private suspend fun syncCalendarEvent(habit: HabitEntity) {
+        val newId = if (habit.syncWithGoogleCalendar) {
+            CalendarSyncManager.upsertHabitEvent(context, habit)
+        } else {
+            CalendarSyncManager.deleteHabitEvent(context, habit.calendarEventId)
+            null
+        }
+        if (newId != habit.calendarEventId) habitDao.updateHabit(habit.copy(calendarEventId = newId))
+    }
+
+    /** Creates/updates events for every habit with calendar sync on. Returns how many. */
+    suspend fun syncAllHabitsToCalendar(): Int {
+        val habits = habitDao.getAllHabitsList().filter { it.syncWithGoogleCalendar }
+        habits.forEach { syncCalendarEvent(it) }
+        return habits.size
     }
 
     suspend fun deleteHabit(habitId: Long) {
         ReminderScheduler.cancelHabitReminder(context, habitId)
+        CalendarSyncManager.deleteHabitEvent(context, habitDao.getHabitById(habitId)?.calendarEventId)
         habitDao.deleteLogsForHabit(habitId)
         habitDao.deleteHabit(habitId)
     }

@@ -107,6 +107,9 @@ fun SproutApp(viewModel: SproutViewModel) {
 
     val isCreateHabitOpen by viewModel.isCreateHabitOpen.collectAsState()
     val editingHabit by viewModel.editingHabit.collectAsState()
+    val calendars by viewModel.calendars.collectAsState()
+    val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
+    val targetCalendarId by viewModel.targetCalendarId.collectAsState()
     val isAnalyticsOpen by viewModel.isAnalyticsOpen.collectAsState()
     val isSettingsOpen by viewModel.isSettingsOpen.collectAsState()
     val isFocusModeOpen by viewModel.isFocusModeOpen.collectAsState()
@@ -270,9 +273,10 @@ fun SproutApp(viewModel: SproutViewModel) {
                             )
                         },
                         onSyncWithCalendar = {
-                            viewModel.syncAllHabitsToCalendar()
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Habit blocks synced to your Google Calendar! 🗓️")
+                            viewModel.syncAllHabitsToCalendar { count ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("$count habits synced as repeating calendar events 🗓️")
+                                }
                             }
                         },
                         onToggleHabit = { viewModel.toggleHabitCompleted(it.habit) },
@@ -423,6 +427,7 @@ fun SproutApp(viewModel: SproutViewModel) {
             }
 
             // Settings & Preferences Dialog
+            LaunchedEffect(isSettingsOpen) { if (isSettingsOpen) viewModel.loadCalendars() }
             if (isSettingsOpen) {
                 SettingsDialog(
                     currentThemeMode = themeMode,
@@ -437,9 +442,10 @@ fun SproutApp(viewModel: SproutViewModel) {
                                 )
                             )
                         } else {
-                            viewModel.syncAllHabitsToCalendar()
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("All habits synced to Google Calendar! 🗓️")
+                            viewModel.syncAllHabitsToCalendar { count ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("$count habits synced as repeating calendar events 🗓️")
+                                }
                             }
                         }
                     },
@@ -456,6 +462,15 @@ fun SproutApp(viewModel: SproutViewModel) {
                         }
                     },
                     onDismiss = { viewModel.isSettingsOpen.value = false },
+                    calendars = calendars,
+                    shownCalendarIds = shownCalendarIds,
+                    targetCalendarId = targetCalendarId,
+                    onOpenCalendarPicker = { viewModel.loadCalendars() },
+                    onSaveCalendarChoice = { shown, target ->
+                        viewModel.saveCalendarChoice(shown, target) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Calendar settings saved 🗓️") }
+                        }
+                    },
                     onClearAllData = { removeEvents ->
                         viewModel.isSettingsOpen.value = false
                         viewModel.clearAllData(removeEvents) { message ->

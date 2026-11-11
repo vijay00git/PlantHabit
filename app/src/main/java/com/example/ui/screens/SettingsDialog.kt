@@ -1,5 +1,13 @@
 package com.example.ui.screens
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Tune
+import com.example.service.CalendarSyncManager
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -85,10 +93,30 @@ fun SettingsDialog(
     onDismiss: () -> Unit,
     /** Clears all user data; the flag says whether to also delete our calendar events. */
     onClearAllData: (removeCalendarEvents: Boolean) -> Unit = {},
+    calendars: List<CalendarSyncManager.CalendarInfo> = emptyList(),
+    shownCalendarIds: Set<Long>? = null,
+    targetCalendarId: Long? = null,
+    onOpenCalendarPicker: () -> Unit = {},
+    onSaveCalendarChoice: (shown: Set<Long>?, target: Long?) -> Unit = { _, _ -> },
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
     var confirmClear by remember { mutableStateOf(false) }
+    var pickCalendars by remember { mutableStateOf(false) }
+
+    if (pickCalendars) {
+        CalendarPickerDialog(
+            calendars = calendars,
+            initialShown = shownCalendarIds,
+            initialTarget = targetCalendarId,
+            onSave = { shown, target ->
+                pickCalendars = false
+                haptics.success()
+                onSaveCalendarChoice(shown, target)
+            },
+            onCancel = { pickCalendars = false }
+        )
+    }
 
     if (confirmClear) {
         ClearDataConfirmDialog(
@@ -196,6 +224,21 @@ fun SettingsDialog(
                         modifier = Modifier.testTag("btn_sync_now"),
                         onClick = onSyncNow
                     )
+                    if (isCalendarSyncEnabled) {
+                        Spacer(Modifier.height(10.dp))
+                        val target = calendars.firstOrNull { it.id == targetCalendarId }
+                        SettingsActionButton(
+                            text = target?.let { "Calendars · habits go to ${it.displayName}" } ?: "Choose calendars",
+                            icon = Icons.Default.Tune,
+                            container = c.skySoft,
+                            content = c.sky,
+                            modifier = Modifier.testTag("btn_choose_calendars"),
+                            onClick = {
+                                onOpenCalendarPicker()
+                                pickCalendars = true
+                            }
+                        )
+                    }
                 }
 
                 // Notification System
@@ -242,6 +285,198 @@ fun SettingsDialog(
     }
 }
 
+/**
+ * Lets the user pick which calendars appear in Plan and which one receives habit events,
+ * grouped by Google account.
+ */
+@Composable
+private fun CalendarPickerDialog(
+    calendars: List<CalendarSyncManager.CalendarInfo>,
+    initialShown: Set<Long>?,
+    initialTarget: Long?,
+    onSave: (shown: Set<Long>?, target: Long?) -> Unit,
+    onCancel: () -> Unit,
+) {
+    val c = PlantTheme.colors
+    // null = "follow the Calendar app" (calendars switched on there)
+    var followCalendarApp by remember(initialShown) { mutableStateOf(initialShown == null) }
+    var shown by remember(calendars, initialShown) {
+        mutableStateOf(initialShown ?: calendars.filter { it.visible }.map { it.id }.toSet())
+    }
+    var target by remember(initialTarget) { mutableStateOf(initialTarget) }
+    val byAccount = calendars.groupBy { it.accountName }
+
+    Dialog(onDismissRequest = onCancel) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(AppShapes.xl)
+                .background(c.surface)
+                .border(1.dp, c.border, AppShapes.xl)
+                .padding(20.dp)
+        ) {
+            Text("Google Calendar", style = MaterialTheme.typography.headlineSmall, color = c.textPrimary)
+            Text(
+                "Choose where habit blocks go and whose events show in Plan.",
+                style = MaterialTheme.typography.bodySmall,
+                color = c.textSecondary
+            )
+            Spacer(Modifier.height(14.dp))
+
+            if (calendars.isEmpty()) {
+                Text(
+                    "No calendars found. Add a Google account in your phone's settings and allow calendar access.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.textSecondary
+                )
+            }
+
+            if (calendars.isNotEmpty()) LazyColumn(
+                modifier = Modifier.weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                item(key = "target_header") {
+                    PickerSectionLabel("ADD HABIT BLOCKS TO")
+                }
+                byAccount.forEach { (account, list) ->
+                    val writable = list.filter { it.writable }
+                    if (writable.isEmpty()) return@forEach
+                    item(key = "t_acc_$account") { AccountLabel(account) }
+                    items(writable, key = { "t_${it.id}" }) { cal ->
+                        CalendarRow(
+                            cal = cal,
+                            selected = target == cal.id,
+                            radio = true,
+                            onClick = { target = cal.id }
+                        )
+                    }
+                }
+
+                item(key = "shown_header") {
+                    Spacer(Modifier.height(10.dp))
+                    PickerSectionLabel("SHOW EVENTS FROM")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(AppShapes.medium)
+                            .bounceClick(pressedScale = 0.98f) {
+                                followCalendarApp = !followCalendarApp
+                                if (followCalendarApp) shown = calendars.filter { it.visible }.map { it.id }.toSet()
+                            }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = followCalendarApp,
+                            onCheckedChange = {
+                                followCalendarApp = it
+                                if (it) shown = calendars.filter { cal -> cal.visible }.map { cal -> cal.id }.toSet()
+                            },
+                            colors = CheckboxDefaults.colors(checkedColor = c.primary, uncheckedColor = c.textMuted)
+                        )
+                        Text(
+                            "Same as my Calendar app (calendars switched on there)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.textPrimary
+                        )
+                    }
+                }
+                byAccount.forEach { (account, list) ->
+                    item(key = "s_acc_$account") { AccountLabel(account) }
+                    items(list, key = { "s_${it.id}" }) { cal ->
+                        CalendarRow(
+                            cal = cal,
+                            selected = cal.id in shown,
+                            radio = false,
+                            enabled = !followCalendarApp,
+                            onClick = { shown = if (cal.id in shown) shown - cal.id else shown + cal.id }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onCancel) {
+                    Text("Cancel", style = MaterialTheme.typography.labelLarge, color = c.textSecondary)
+                }
+                TextButton(
+                    onClick = { onSave(if (followCalendarApp) null else shown, target) },
+                    modifier = Modifier.testTag("btn_save_calendars")
+                ) {
+                    Text("Save", style = MaterialTheme.typography.labelLarge, color = c.primary)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PickerSectionLabel(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelMedium,
+        color = PlantTheme.colors.textMuted,
+        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+    )
+}
+
+@Composable
+private fun AccountLabel(account: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)) {
+        Icon(Icons.Default.AccountCircle, contentDescription = null, tint = PlantTheme.colors.sky, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(account, style = MaterialTheme.typography.titleSmall, color = PlantTheme.colors.textPrimary)
+    }
+}
+
+@Composable
+private fun CalendarRow(
+    cal: CalendarSyncManager.CalendarInfo,
+    selected: Boolean,
+    radio: Boolean,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+) {
+    val c = PlantTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(AppShapes.medium)
+            .background(if (selected && radio) c.primarySoft else Color.Transparent)
+            .bounceClick(enabled = enabled, pressedScale = 0.98f, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .graphicsLayer { alpha = if (enabled) 1f else 0.5f },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .clip(CircleShape)
+                .background(Color(cal.color or 0xFF000000.toInt()))
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(cal.displayName, style = MaterialTheme.typography.bodyMedium, color = c.textPrimary)
+            if (cal.isPrimary) Text("Main calendar", style = MaterialTheme.typography.labelSmall, color = c.textMuted)
+        }
+        if (radio) {
+            RadioButton(
+                selected = selected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(selectedColor = c.primary, unselectedColor = c.textMuted)
+            )
+        } else {
+            Checkbox(
+                checked = selected,
+                onCheckedChange = { onClick() },
+                enabled = enabled,
+                colors = CheckboxDefaults.colors(checkedColor = c.primary, uncheckedColor = c.textMuted)
+            )
+        }
+    }
+}
+
 @Composable
 private fun ClearDataConfirmDialog(
     canRemoveCalendarEvents: Boolean,
@@ -249,7 +484,8 @@ private fun ClearDataConfirmDialog(
     onCancel: () -> Unit,
 ) {
     val c = PlantTheme.colors
-    var removeEvents by remember { mutableStateOf(false) }
+    // Habit events repeat, so removing them is the sensible default
+    var removeEvents by remember { mutableStateOf(true) }
     AlertDialog(
         onDismissRequest = onCancel,
         containerColor = c.surface,
