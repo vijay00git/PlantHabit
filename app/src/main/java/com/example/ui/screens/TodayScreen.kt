@@ -258,9 +258,12 @@ fun TodayScreen(
             }
         }
 
-        // Routine Card (Happy Mornings)
-        if (routineHabits.isNotEmpty()) {
-            item(key = "routine") {
+        // One routine card per group (a joined challenge or a named routine)
+        routineHabits.groupBy { it.habit.routineGroup!! }.forEach { (group, groupHabits) ->
+            val linked = goalChallenges.firstOrNull { ch ->
+                ch.isJoined && (groupHabits.any { it.habit.challengeId == ch.id } || ch.title == group)
+            }
+            item(key = "routine_$group") {
                 Box(
                     modifier = Modifier
                         .animateItem()
@@ -268,10 +271,11 @@ fun TodayScreen(
                         .staggeredEntrance(5)
                 ) {
                     RoutineCard(
-                        title = "Happy Mornings",
-                        dayProgressText = "Day 1 of 7",
-                        routineHabits = routineHabits,
-                        onToggleHabit = onToggleHabit
+                        title = group,
+                        dayProgressText = linked?.let { "Day ${it.currentDay} of ${it.durationDays}" } ?: "Daily routine",
+                        routineHabits = groupHabits,
+                        onToggleHabit = onToggleHabit,
+                        challenge = linked
                     )
                 }
             }

@@ -51,7 +51,9 @@ fun RoutineCard(
     dayProgressText: String,
     routineHabits: List<HabitWithStatus>,
     onToggleHabit: (HabitWithStatus) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** The challenge this routine belongs to, for its banner; null = default morning photo. */
+    challenge: com.example.data.model.ChallengeEntity? = null,
 ) {
     val c = PlantTheme.colors
     val completedCount = routineHabits.count { it.isCompleted }
@@ -72,12 +74,17 @@ fun RoutineCard(
                 .fillMaxWidth()
                 .height(132.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.routine_morning),
-                contentDescription = "Routine banner",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+            val banner = challenge?.let { rememberBannerSource(it) }
+            if (banner != null) {
+                ChallengeBannerImage(source = banner, contentDescription = "$title banner", modifier = Modifier.fillMaxSize())
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.routine_morning),
+                    contentDescription = "Routine banner",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()

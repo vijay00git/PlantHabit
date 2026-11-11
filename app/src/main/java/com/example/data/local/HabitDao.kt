@@ -90,7 +90,7 @@ interface HabitDao {
     @Query("DELETE FROM mood_logs")
     suspend fun deleteAllMoodLogs()
 
-    @Query("UPDATE challenges SET isJoined = 0, currentDay = 1, completedTasksToday = 0, goalCurrent = 0, startedAt = 0")
+    @Query("UPDATE challenges SET isJoined = 0, currentDay = 1, completedTasksToday = 0, goalCurrent = 0, startedAt = 0, timesCompleted = 0")
     suspend fun resetAllChallengeProgress()
 
     @Query("SELECT * FROM challenges")

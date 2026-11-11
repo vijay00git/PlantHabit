@@ -168,8 +168,8 @@ object BuiltInChallenges {
             goalTarget = 1850f, goalUnit = "$",
             tip = "Automating even a small daily amount adds up faster than you expect.",
             tasks = listOf(
-                task("Daily deposit", "Move a small amount into savings", "EVENING", "20:00", "savings",
-                    "Skipping one impulse buy can fund a week of deposits."),
+                task("Daily deposit", "Move money into savings — it counts toward your jar", "EVENING", "20:00", "savings",
+                    "Skipping one impulse buy can fund a week of deposits.", target = 30, unit = "$"),
                 task("Skip one impulse buy", "Pause 24 hours before non-essential purchases", "AFTERNOON", "12:30", "idea",
                     "Most impulse wants fade within a day."),
             )

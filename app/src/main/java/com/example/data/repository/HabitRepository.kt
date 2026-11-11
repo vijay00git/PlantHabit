@@ -197,6 +197,7 @@ class HabitRepository(
         )
 
         habitDao.insertOrUpdateLog(updatedLog)
+        addToLinkedGoal(habit, newProgress - oldProgress)
         PlantHabitWidget.refresh(context)
         return updatedLog
     }
@@ -228,6 +229,7 @@ class HabitRepository(
         )
 
         habitDao.insertOrUpdateLog(updatedLog)
+        addToLinkedGoal(habit, newProgress - oldProgress)
         PlantHabitWidget.refresh(context)
         return newCompleted
     }
@@ -370,6 +372,19 @@ class HabitRepository(
                 goalCurrent = 0f, completedTasksToday = 0, timesCompleted = challenge.timesCompleted + 1
             )
         )
+    }
+
+    /**
+     * If [habit] belongs to a joined goal challenge measured in the same unit (e.g. km),
+     * its logged progress also moves the challenge's goal counter.
+     */
+    private suspend fun addToLinkedGoal(habit: HabitEntity, delta: Int) {
+        if (delta == 0) return
+        val challengeId = habit.challengeId ?: return
+        val challenge = habitDao.getChallengeById(challengeId) ?: return
+        if (!challenge.isJoined || challenge.goalTarget <= 0f) return
+        if (!habit.unit.trim().equals(challenge.goalUnit.trim(), ignoreCase = true)) return
+        incrementGoal(challengeId, delta.toFloat())
     }
 
     suspend fun incrementGoal(challengeId: String, delta: Float) {

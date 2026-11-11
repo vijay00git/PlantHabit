@@ -226,7 +226,8 @@ fun ChallengeDetailsDialog(
 
                     // Goal Counter Overview (if applicable)
                     if (isGoalCounter) {
-                        val progressRatio = (challenge.goalCurrent / challenge.goalTarget.coerceAtLeast(1f)).coerceIn(0f, 1f)
+                        val goalNow = if (challenge.isJoined) challenge.goalCurrent else 0f
+                        val progressRatio = (goalNow / challenge.goalTarget.coerceAtLeast(1f)).coerceIn(0f, 1f)
                         Row(
                             modifier = Modifier
                                 .staggeredEntrance(2)
@@ -248,7 +249,7 @@ fun ChallengeDetailsDialog(
                                 )
                                 Text(
                                     text = "%.0f %s of %.0f %s".format(
-                                        challenge.goalCurrent,
+                                        goalNow,
                                         challenge.goalUnit,
                                         challenge.goalTarget,
                                         challenge.goalUnit

@@ -68,20 +68,10 @@ class ReminderReceiver : BroadcastReceiver() {
                     val habit = db.habitDao().getHabitById(habitId) ?: return@launch
                     val existingLog = db.habitDao().getLogForHabitAndDate(habitId, today)
                     if (existingLog?.isCompleted == true) return@launch
-                    val updatedLog = existingLog?.copy(
-                        progressValue = maxOf(habit.targetValue, existingLog.progressValue),
-                        isCompleted = true,
-                        completedAt = System.currentTimeMillis(),
-                        previousProgress = existingLog.progressValue
-                    ) ?: HabitLogEntity(
-                        habitId = habitId,
-                        date = today,
-                        progressValue = habit.targetValue,
-                        isCompleted = true,
-                        completedAt = System.currentTimeMillis()
-                    )
-                    db.habitDao().insertOrUpdateLog(updatedLog)
-                    com.example.widget.PlantHabitWidget.refresh(context)
+                    // Same logic as the app (restores/links goal progress, refreshes widget)
+                    com.example.data.repository.HabitRepository(
+                        context.applicationContext, db.habitDao(), com.example.data.local.SproutPreferences(context.applicationContext)
+                    ).toggleHabitCompleted(habit, today)
                 }
             }
 
