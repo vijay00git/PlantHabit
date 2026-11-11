@@ -1,5 +1,18 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyRow
+import com.example.ui.components.iconAccent
+import com.example.ui.components.AppIcon
+import com.example.data.model.HabitEntity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -100,7 +113,8 @@ private fun categoryIcon(category: String): ImageVector = when (category) {
     "Mindfulness" -> Icons.Default.SelfImprovement
     "Fitness" -> Icons.Default.FitnessCenter
     "Productivity" -> Icons.Default.Bolt
-    else -> Icons.Default.Favorite
+    "Learning" -> AppIcon.STUDY.vector
+    else -> AppIcon.SPARKLE.vector
 }
 
 /** Sensible stepper increment per unit, so "ml" or "steps" don't need hundreds of taps. */
@@ -111,38 +125,53 @@ private fun stepFor(unit: String): Int = when (unit) {
     else -> 1
 }
 
+/** Everything the habit sheet collects; used for both creating and editing. */
+data class HabitDraft(
+    val title: String,
+    val category: String,
+    val timeOfDay: String,
+    val scheduledTime: String,
+    val targetValue: Int,
+    val unit: String,
+    val reminderEnabled: Boolean,
+    val syncGoogleCalendar: Boolean,
+    val iconName: String,
+)
+
+/**
+ * Create a habit, or edit [initial] when it's non-null (then [onDelete] shows a Delete button).
+ */
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CreateHabitDialog(
     onDismiss: () -> Unit,
-    onSave: (
-        title: String,
-        category: String,
-        timeOfDay: String,
-        scheduledTime: String,
-        targetValue: Int,
-        unit: String,
-        reminderEnabled: Boolean,
-        syncGoogleCalendar: Boolean
-    ) -> Unit
+    onSave: (HabitDraft) -> Unit,
+    initial: HabitEntity? = null,
+    onDelete: (() -> Unit)? = null,
 ) {
+    val isEdit = initial != null
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    var title by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Health") }
-    var timeOfDay by remember { mutableStateOf("MORNING") }
-    var scheduledTime by remember { mutableStateOf("08:00") }
-    var target by remember { mutableIntStateOf(1) }
-    var unit by remember { mutableStateOf("tasks") }
-    var reminderEnabled by remember { mutableStateOf(true) }
-    var syncGoogleCalendar by remember { mutableStateOf(true) }
+    var title by remember { mutableStateOf(initial?.title ?: "") }
+    var category by remember { mutableStateOf(initial?.category ?: "Health") }
+    var timeOfDay by remember { mutableStateOf(initial?.timeOfDay ?: "MORNING") }
+    var scheduledTime by remember { mutableStateOf(initial?.scheduledTime ?: "08:00") }
+    var target by remember { mutableIntStateOf(initial?.targetValue ?: 1) }
+    var unit by remember { mutableStateOf(initial?.unit ?: "tasks") }
+    var reminderEnabled by remember { mutableStateOf(initial?.reminderEnabled ?: true) }
+    var syncGoogleCalendar by remember { mutableStateOf(initial?.syncWithGoogleCalendar ?: true) }
+    // Icon follows the title until the user picks one themselves
+    var pickedIcon by remember { mutableStateOf(initial?.iconName) }
+    val iconName = pickedIcon ?: AppIcon.guessFromTitle(title, category).key
     var isSaving by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
 
-    val categories = listOf("Health", "Mindfulness", "Fitness", "Productivity")
-    val units = listOf("tasks", "ml", "steps", "mins", "glasses")
+    // Keep categories/units an existing habit uses even if they're not in the default lists
+    val categories = (listOf("Health", "Mindfulness", "Fitness", "Productivity", "Learning") + listOfNotNull(initial?.category)).distinct()
+    val units = (listOf("tasks", "ml", "steps", "mins", "pages", "km", "glasses") + listOfNotNull(initial?.unit)).distinct()
     val canSave = title.isNotBlank() && !isSaving
 
     fun closeAnimated() {
@@ -159,16 +188,49 @@ fun CreateHabitDialog(
         val finalTime = scheduledTime.ifEmpty { "08:00" }
         scope.launch { sheetState.hide() }.invokeOnCompletion {
             onSave(
-                finalTitle,
-                category,
-                timeOfDay,
-                finalTime,
-                target,
-                unit,
-                reminderEnabled,
-                syncGoogleCalendar
+                HabitDraft(
+                    title = finalTitle,
+                    category = category,
+                    timeOfDay = timeOfDay,
+                    scheduledTime = finalTime,
+                    targetValue = target,
+                    unit = unit,
+                    reminderEnabled = reminderEnabled,
+                    syncGoogleCalendar = syncGoogleCalendar,
+                    iconName = iconName,
+                )
             )
         }
+    }
+
+    if (confirmDelete && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            containerColor = c.surface,
+            shape = AppShapes.xl,
+            title = { Text("Delete \"${initial?.title}\"?", style = MaterialTheme.typography.titleLarge, color = c.textPrimary) },
+            text = {
+                Text(
+                    "Its reminders and history will be removed too. This can't be undone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.textSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    haptics.reject()
+                    scope.launch { sheetState.hide() }.invokeOnCompletion { onDelete() }
+                }, modifier = Modifier.testTag("btn_confirm_delete_habit")) {
+                    Text("Delete", style = MaterialTheme.typography.labelLarge, color = c.berry)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text("Cancel", style = MaterialTheme.typography.labelLarge, color = c.textSecondary)
+                }
+            }
+        )
     }
 
     ModalBottomSheet(
@@ -204,12 +266,12 @@ fun CreateHabitDialog(
             ) {
                 Column {
                     Text(
-                        text = "New Habit 🌱",
+                        text = if (isEdit) "Edit habit ✏️" else "New Habit 🌱",
                         style = MaterialTheme.typography.headlineSmall,
                         color = c.textPrimary
                     )
                     Text(
-                        text = "Plant a small seed, watch it grow",
+                        text = if (isEdit) "Tweak it until it fits your day" else "Plant a small seed, watch it grow",
                         style = MaterialTheme.typography.bodySmall,
                         color = c.textSecondary
                     )
@@ -266,6 +328,33 @@ fun CreateHabitDialog(
                 }
             }
 
+            // Icon picker
+            FieldSection(label = "ICON") {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(AppIcon.entries, key = { it.key }) { icon ->
+                        val selected = icon.key == iconName
+                        val accent = c.iconAccent(icon)
+                        val scale by animateFloatAsState(if (selected) 1.12f else 1f, spring(dampingRatio = 0.5f), label = "iconPick")
+                        Box(
+                            modifier = Modifier
+                                .graphicsLayer { scaleX = scale; scaleY = scale }
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(if (selected) accent.color else accent.soft)
+                                .bounceClick { pickedIcon = icon.key },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                icon.vector,
+                                contentDescription = icon.key,
+                                tint = if (selected) c.onAccent else accent.color,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             // Time of Day
             FieldSection(label = "TIME OF DAY") {
                 TimeOfDaySegmented(
@@ -299,6 +388,7 @@ fun CreateHabitDialog(
                 FieldSection(label = "DAILY TARGET", modifier = Modifier.weight(1f)) {
                     TargetStepper(
                         value = target,
+                        onValueChange = { target = it.coerceIn(1, 1_000_000) },
                         onMinus = {
                             val step = stepFor(unit)
                             target = maxOf(1, ((target - 1) / step) * step)
@@ -386,10 +476,28 @@ fun CreateHabitDialog(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Plant This Habit 🌱",
+                    text = if (isEdit) "Save changes" else "Plant This Habit 🌱",
                     style = MaterialTheme.typography.titleMedium,
                     color = saveTextColor
                 )
+            }
+
+            if (isEdit && onDelete != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clip(AppShapes.medium)
+                        .background(c.berrySoft)
+                        .bounceClick { confirmDelete = true }
+                        .testTag("btn_delete_habit"),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = c.berry, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Delete habit", style = MaterialTheme.typography.labelLarge, color = c.berry)
+                }
             }
         }
     }
@@ -572,6 +680,7 @@ private fun TimeOfDaySegmented(selected: String, onSelect: (String) -> Unit) {
 @Composable
 private fun TargetStepper(
     value: Int,
+    onValueChange: (Int) -> Unit,
     onMinus: () -> Unit,
     onPlus: () -> Unit,
     canDecrease: Boolean
@@ -593,10 +702,23 @@ private fun TargetStepper(
             enabled = canDecrease,
             onClick = onMinus
         )
-        AnimatedCounter(
-            value = value,
-            style = MaterialTheme.typography.titleLarge,
-            color = c.textPrimary
+        // Tap the number to type an exact target (e.g. 3000)
+        var text by remember(value) { mutableStateOf(value.toString()) }
+        BasicTextField(
+            value = text,
+            onValueChange = { new ->
+                val digits = new.filter { it.isDigit() }.take(7)
+                text = digits
+                digits.toIntOrNull()?.let { if (it > 0) onValueChange(it) }
+            },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            textStyle = MaterialTheme.typography.titleLarge.copy(color = c.textPrimary, textAlign = TextAlign.Center),
+            cursorBrush = SolidColor(c.primary),
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 4.dp)
+                .testTag("input_habit_target")
         )
         StepperButton(
             icon = Icons.Default.Add,

@@ -79,6 +79,7 @@ fun TodayScreen(
     onFilterSelected: (String) -> Unit,
     habitsWithStatus: List<HabitWithStatus>,
     onToggleHabit: (HabitWithStatus) -> Unit,
+    onOpenHabitDetails: (com.example.data.model.HabitEntity) -> Unit = {},
     onIncrementHabit: (HabitWithStatus, Int) -> Unit,
     onOpenAnalytics: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -378,7 +379,8 @@ fun TodayScreen(
                 HabitCard(
                     habitWithStatus = habitWithStatus,
                     onToggleCompleted = { onToggleHabit(habitWithStatus) },
-                    onIncrement = { amount -> onIncrementHabit(habitWithStatus, amount) }
+                    onIncrement = { amount -> onIncrementHabit(habitWithStatus, amount) },
+                    onOpenDetails = { onOpenHabitDetails(habitWithStatus.habit) }
                 )
             }
         }

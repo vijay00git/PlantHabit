@@ -190,6 +190,7 @@ class HabitRepository(
 
     suspend fun deleteHabit(habitId: Long) {
         ReminderScheduler.cancelHabitReminder(context, habitId)
+        habitDao.deleteLogsForHabit(habitId)
         habitDao.deleteHabit(habitId)
     }
 

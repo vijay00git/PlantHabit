@@ -155,6 +155,47 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /** Habit currently open in the editor sheet (null = closed). */
+    val editingHabit = MutableStateFlow<HabitEntity?>(null)
+
+    /** Creates a new habit, or updates [existing] with the draft's values. */
+    fun saveHabit(draft: com.example.ui.screens.HabitDraft, existing: HabitEntity?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (existing == null) {
+                repository.createHabit(
+                    HabitEntity(
+                        title = draft.title,
+                        category = draft.category,
+                        timeOfDay = draft.timeOfDay,
+                        scheduledTime = draft.scheduledTime,
+                        targetValue = draft.targetValue,
+                        unit = draft.unit,
+                        iconName = draft.iconName,
+                        reminderEnabled = draft.reminderEnabled,
+                        reminderTime = draft.scheduledTime,
+                        syncWithGoogleCalendar = draft.syncGoogleCalendar
+                    )
+                )
+            } else {
+                repository.updateHabit(
+                    existing.copy(
+                        title = draft.title,
+                        category = draft.category,
+                        timeOfDay = draft.timeOfDay,
+                        scheduledTime = draft.scheduledTime,
+                        targetValue = draft.targetValue,
+                        unit = draft.unit,
+                        iconName = draft.iconName,
+                        reminderEnabled = draft.reminderEnabled,
+                        reminderTime = draft.scheduledTime,
+                        syncWithGoogleCalendar = draft.syncGoogleCalendar
+                    )
+                )
+            }
+            refreshAnalytics()
+        }
+    }
+
     fun deleteHabit(habitId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteHabit(habitId)

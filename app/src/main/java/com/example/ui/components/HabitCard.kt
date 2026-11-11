@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.SelfImprovement
@@ -65,7 +66,9 @@ fun HabitCard(
     habitWithStatus: HabitWithStatus,
     onToggleCompleted: () -> Unit,
     onIncrement: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Long-press or swipe left: open the habit's details / editor. */
+    onOpenDetails: () -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
@@ -149,10 +152,15 @@ fun HabitCard(
     // ---- swipe right to complete ----
     val currentIsDone by rememberUpdatedState(isDone)
     val currentToggle by rememberUpdatedState(toggle)
+    val currentOpenDetails by rememberUpdatedState(onOpenDetails)
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.StartToEnd && !currentIsDone) {
                 currentToggle()
+            }
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                haptics.tick()
+                currentOpenDetails()
             }
             false // always snap back; the card itself stays in the list
         }
@@ -168,9 +176,10 @@ fun HabitCard(
         SwipeToDismissBox(
             state = dismissState,
             enableDismissFromStartToEnd = !isDone,
-            enableDismissFromEndToStart = false,
+            enableDismissFromEndToStart = true,
             backgroundContent = {
-                val armed = dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
+                val editing = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
+                val armed = dismissState.targetValue != SwipeToDismissBoxValue.Settled
                 val swipeBg by animateColorAsState(
                     targetValue = if (armed) c.primary else c.primarySoft,
                     animationSpec = tween(200),
@@ -186,18 +195,23 @@ fun HabitCard(
                     animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                     label = "swipe_icon_scale"
                 )
+                val editBg by animateColorAsState(
+                    targetValue = if (armed) c.sky else c.skySoft,
+                    animationSpec = tween(200),
+                    label = "swipe_edit_bg"
+                )
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(AppShapes.large)
-                        .background(swipeBg)
-                        .padding(start = 24.dp),
-                    contentAlignment = Alignment.CenterStart
+                        .background(if (editing) editBg else swipeBg)
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = if (editing) Alignment.CenterEnd else Alignment.CenterStart
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        imageVector = if (editing) Icons.Default.Edit else Icons.Default.Check,
                         contentDescription = null,
-                        tint = swipeIcon,
+                        tint = if (editing) (if (armed) c.onAccent else c.sky) else swipeIcon,
                         modifier = Modifier
                             .size(28.dp)
                             .graphicsLayer { scaleX = iconScale; scaleY = iconScale }
@@ -208,7 +222,7 @@ fun HabitCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .bounceClick(pressedScale = 0.98f, haptic = false, onClick = onCardClick)
+                    .bounceClick(pressedScale = 0.98f, haptic = false, onLongClick = onOpenDetails, onClick = onCardClick)
                     .clip(AppShapes.large)
                     .background(cardBrush)
                     .border(1.dp, cardBorder, AppShapes.large)

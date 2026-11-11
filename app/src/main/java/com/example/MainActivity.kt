@@ -106,6 +106,7 @@ fun SproutApp(viewModel: SproutViewModel) {
     val todayMood = remember(moodLogs, selectedDate) { moodLogs.find { it.date == selectedDate } }
 
     val isCreateHabitOpen by viewModel.isCreateHabitOpen.collectAsState()
+    val editingHabit by viewModel.editingHabit.collectAsState()
     val isAnalyticsOpen by viewModel.isAnalyticsOpen.collectAsState()
     val isSettingsOpen by viewModel.isSettingsOpen.collectAsState()
     val isFocusModeOpen by viewModel.isFocusModeOpen.collectAsState()
@@ -216,6 +217,7 @@ fun SproutApp(viewModel: SproutViewModel) {
                         onFilterSelected = { viewModel.setFilter(it) },
                         habitsWithStatus = habitsWithStatus,
                         onToggleHabit = { viewModel.toggleHabitCompleted(it.habit) },
+                        onOpenHabitDetails = { viewModel.editingHabit.value = it },
                         onIncrementHabit = { habitWithStatus, amount ->
                             viewModel.incrementHabitProgress(habitWithStatus.habit, amount)
                         },
@@ -277,7 +279,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                         onIncrementHabit = { habitWithStatus, amount ->
                             viewModel.incrementHabitProgress(habitWithStatus.habit, amount)
                         },
-                        onAddTaskClick = { viewModel.isCreateHabitOpen.value = true }
+                        onAddTaskClick = { viewModel.isCreateHabitOpen.value = true },
+                        onOpenHabitDetails = { viewModel.editingHabit.value = it }
                     )
                 }
 
@@ -352,24 +355,30 @@ fun SproutApp(viewModel: SproutViewModel) {
                 )
             }
 
-            // Create Habit Dialog
-            if (isCreateHabitOpen) {
+            // Create / edit habit sheet
+            val editing = editingHabit
+            if (isCreateHabitOpen || editing != null) {
                 CreateHabitDialog(
-                    onDismiss = { viewModel.isCreateHabitOpen.value = false },
-                    onSave = { title, cat, tod, time, target, unit, reminder, syncCal ->
-                        viewModel.createHabit(
-                            title = title,
-                            category = cat,
-                            timeOfDay = tod,
-                            scheduledTime = time,
-                            targetValue = target,
-                            unit = unit,
-                            reminderEnabled = reminder,
-                            syncGoogleCalendar = syncCal
-                        )
+                    initial = editing,
+                    onDismiss = {
                         viewModel.isCreateHabitOpen.value = false
+                        viewModel.editingHabit.value = null
+                    },
+                    onSave = { draft ->
+                        viewModel.saveHabit(draft, editing)
+                        viewModel.isCreateHabitOpen.value = false
+                        viewModel.editingHabit.value = null
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Planted new habit '$title'! 🌱")
+                            snackbarHostState.showSnackbar(
+                                if (editing != null) "Saved changes to '${draft.title}' ✏️" else "Planted new habit '${draft.title}'! 🌱"
+                            )
+                        }
+                    },
+                    onDelete = editing?.let { habit ->
+                        {
+                            viewModel.deleteHabit(habit.id)
+                            viewModel.editingHabit.value = null
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Deleted '${habit.title}'") }
                         }
                     }
                 )

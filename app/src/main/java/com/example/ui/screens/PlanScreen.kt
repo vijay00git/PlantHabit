@@ -95,6 +95,7 @@ fun PlanScreen(
     onToggleHabit: (HabitWithStatus) -> Unit,
     onIncrementHabit: (HabitWithStatus, Int) -> Unit,
     onAddTaskClick: () -> Unit,
+    onOpenHabitDetails: (com.example.data.model.HabitEntity) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val c = PlantTheme.colors
@@ -233,7 +234,8 @@ fun PlanScreen(
                             onIncrementHabit(habitWithStatus, step)
                         },
                         isStepOrWater = habit.targetValue > 1,
-                        isLast = isLast
+                        isLast = isLast,
+                        onOpenDetails = { onOpenHabitDetails(habitWithStatus.habit) }
                     )
 
                     // "Now" marker sits at the real current time
@@ -471,7 +473,8 @@ private fun TimelineRow(
     onToggle: () -> Unit,
     onIncrement: () -> Unit,
     isStepOrWater: Boolean,
-    isLast: Boolean
+    isLast: Boolean,
+    onOpenDetails: () -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
@@ -542,6 +545,7 @@ private fun TimelineRow(
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 6.dp, bottom = 14.dp)
+                .bounceClick(pressedScale = 0.98f, haptic = false, onLongClick = onOpenDetails) { }
                 .clip(AppShapes.medium)
                 .background(c.card)
                 .border(1.dp, if (isCompleted) accent.color.copy(alpha = 0.45f) else c.border, AppShapes.medium)
