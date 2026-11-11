@@ -1,5 +1,10 @@
 package com.example.ui.components
 
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.AnimatedVisibility
 import com.example.data.model.scheduleLabel
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -258,14 +263,40 @@ fun HabitCard(
                             .padding(horizontal = 14.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Text(
-                            text = habit.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = titleColor,
-                            textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = habit.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = titleColor,
+                                textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            val streak = habitWithStatus.currentStreak
+                            AnimatedVisibility(
+                                visible = streak > 0,
+                                enter = scaleIn(spring(dampingRatio = 0.5f)) + fadeIn(),
+                                exit = scaleOut() + fadeOut()
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                        .clip(AppShapes.pill)
+                                        .background(c.sunriseSoft)
+                                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🔥", style = MaterialTheme.typography.labelSmall)
+                                    AnimatedCounter(
+                                        value = streak,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = c.sunrise,
+                                        modifier = Modifier.padding(start = 2.dp)
+                                    )
+                                }
+                            }
+                        }
 
                         val progressText = if (isStepOrWater) {
                             "%,d / %,d %s".format(currentProgress, target, habit.unit)

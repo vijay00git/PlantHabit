@@ -56,9 +56,12 @@ class HabitRepository(
     fun getHabitsWithStatusForDate(dateString: String): Flow<List<HabitWithStatus>> {
         return combine(
             habitDao.getAllHabitsFlow(),
-            habitDao.getLogsForDateFlow(dateString)
-        ) { habits, logs ->
+            habitDao.getAllLogsFlow()
+        ) { habits, allLogs ->
+            val logs = allLogs.filter { it.date == dateString }
             val logsMap = logs.associateBy { it.habitId }
+            val completedByHabit = allLogs.filter { it.isCompleted }.groupBy({ it.habitId }, { it.date })
+                .mapValues { it.value.toSet() }
             val dayOfWeek = dayOfWeekOf(dateString)
             habits.filter { it.isScheduledOn(dayOfWeek) }.map { habit ->
                 val log = logsMap[habit.id]
@@ -69,7 +72,7 @@ class HabitRepository(
                     log = log,
                     currentProgress = currentProgress,
                     isCompleted = isCompleted,
-                    currentStreak = 0 // will be computed in deep analytics
+                    currentStreak = currentStreak(habit, completedByHabit[habit.id].orEmpty(), dateString)
                 )
             }
         }
@@ -99,6 +102,46 @@ class HabitRepository(
                 }
                 out
             }
+    }
+
+    /**
+     * Consecutive scheduled days completed, counting back from [asOf]. Unscheduled days are
+     * skipped, and an unfinished [asOf] itself doesn't break the streak (the day isn't over).
+     */
+    fun currentStreak(habit: HabitEntity, completedDates: Set<String>, asOf: String): Int {
+        val cal = Calendar.getInstance().apply { time = dateFormat.parse(asOf) ?: Date() }
+        val createdDay = dateFormat.format(Date(habit.createdAt))
+        var streak = 0
+        for (i in 0 until 730) {
+            val d = dateFormat.format(cal.time)
+            if (d < createdDay && d !in completedDates) break
+            if (habit.isScheduledOn(cal.get(Calendar.DAY_OF_WEEK))) {
+                when {
+                    d in completedDates -> streak++
+                    i == 0 -> Unit // today/selected day still in progress
+                    else -> return streak
+                }
+            }
+            cal.add(Calendar.DAY_OF_YEAR, -1)
+        }
+        return streak
+    }
+
+    /** Longest run of consecutive scheduled days completed, ever. */
+    fun bestStreak(habit: HabitEntity, completedDates: Set<String>): Int {
+        if (completedDates.isEmpty()) return 0
+        val cal = Calendar.getInstance().apply { time = dateFormat.parse(completedDates.min()) ?: Date() }
+        val end = dateFormat.format(Date())
+        var best = 0
+        var run = 0
+        while (dateFormat.format(cal.time) <= end) {
+            val d = dateFormat.format(cal.time)
+            if (habit.isScheduledOn(cal.get(Calendar.DAY_OF_WEEK))) {
+                if (d in completedDates) { run++; best = maxOf(best, run) } else if (d != end) run = 0
+            }
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+        }
+        return best
     }
 
     private fun dayOfWeekOf(dateString: String): Int = Calendar.getInstance().apply {
