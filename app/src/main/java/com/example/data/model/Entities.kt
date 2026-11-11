@@ -31,6 +31,26 @@ data class HabitEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+/** Days of week this habit runs on (java.util.Calendar.DAY_OF_WEEK: 1 = Sunday … 7 = Saturday). */
+fun HabitEntity.scheduledDays(): Set<Int> =
+    reminderDays.split(",").mapNotNull { it.trim().toIntOrNull() }.filter { it in 1..7 }.toSet()
+        .ifEmpty { (1..7).toSet() }
+
+fun HabitEntity.isScheduledOn(dayOfWeek: Int): Boolean = dayOfWeek in scheduledDays()
+
+/** "Every day", "Weekdays", "Weekends" or e.g. "Mon, Wed, Fri". */
+fun HabitEntity.scheduleLabel(): String = scheduleLabel(scheduledDays())
+
+fun scheduleLabel(days: Set<Int>): String {
+    val names = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    return when (days) {
+        (1..7).toSet() -> "Every day"
+        setOf(2, 3, 4, 5, 6) -> "Weekdays"
+        setOf(1, 7) -> "Weekends"
+        else -> (listOf(2, 3, 4, 5, 6, 7, 1).filter { it in days }).joinToString(", ") { names[it - 1] }
+    }
+}
+
 @Entity(
     tableName = "habit_logs",
     indices = [

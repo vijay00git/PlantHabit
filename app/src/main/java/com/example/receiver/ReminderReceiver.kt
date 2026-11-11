@@ -35,15 +35,24 @@ class ReminderReceiver : BroadcastReceiver() {
             ACTION_HABIT_REMINDER -> {
                 val title = intent.getStringExtra(EXTRA_HABIT_TITLE) ?: "Habit Reminder"
                 val desc = intent.getStringExtra(EXTRA_HABIT_DESC) ?: "Time for your habit!"
-                NotificationHelper.showReminderNotification(context, habitId, title, desc)
-
-                // Reschedule for next day if repeating
+                val pending = goAsync()
                 val scope = CoroutineScope(Dispatchers.IO)
                 scope.launch {
-                    val db = SproutDatabase.getDatabase(context, scope)
-                    val habit = db.habitDao().getHabitById(habitId)
-                    if (habit != null && habit.reminderEnabled) {
-                        ReminderScheduler.scheduleHabitReminder(context, habit)
+                    try {
+                        val db = SproutDatabase.getDatabase(context, scope)
+                        val habit = db.habitDao().getHabitById(habitId)
+                        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                        val doneToday = db.habitDao().getLogForHabitAndDate(habitId, today)?.isCompleted == true
+                        // Only remind if the habit still exists and isn't already done today
+                        if (habit == null || !doneToday) {
+                            NotificationHelper.showReminderNotification(context, habitId, title, desc)
+                        }
+                        // Reschedule for the next scheduled day
+                        if (habit != null && habit.reminderEnabled) {
+                            ReminderScheduler.scheduleHabitReminder(context, habit)
+                        }
+                    } finally {
+                        pending.finish()
                     }
                 }
             }

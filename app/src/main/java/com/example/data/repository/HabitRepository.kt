@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import com.example.data.model.isScheduledOn
 import android.content.Context
 import com.example.data.local.HabitDao
 import com.example.data.local.SproutPreferences
@@ -58,7 +59,8 @@ class HabitRepository(
             habitDao.getLogsForDateFlow(dateString)
         ) { habits, logs ->
             val logsMap = logs.associateBy { it.habitId }
-            habits.map { habit ->
+            val dayOfWeek = dayOfWeekOf(dateString)
+            habits.filter { it.isScheduledOn(dayOfWeek) }.map { habit ->
                 val log = logsMap[habit.id]
                 val currentProgress = log?.progressValue ?: 0
                 val isCompleted = log?.isCompleted ?: (currentProgress >= habit.targetValue && habit.targetValue > 0)
@@ -98,6 +100,10 @@ class HabitRepository(
                 out
             }
     }
+
+    private fun dayOfWeekOf(dateString: String): Int = Calendar.getInstance().apply {
+        time = dateFormat.parse(dateString) ?: Date()
+    }.get(Calendar.DAY_OF_WEEK)
 
     /** 1 on the start day, 2 the next calendar day, and so on. */
     private fun dayNumber(startedAt: Long): Int {
@@ -323,13 +329,14 @@ class HabitRepository(
             val day = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
             val dateStr = dateFormat.format(day.time)
             val completedCount = completedLogs.count { it.date == dateStr }
+            val scheduledCount = habits.count { it.isScheduledOn(day.get(Calendar.DAY_OF_WEEK)) }
             weeklyStats.add(
                 WeeklyStat(
                     dayLabel = dayFormat.format(day.time),
                     dateString = dateStr,
-                    completionRate = (completedCount.toFloat() / habits.size).coerceIn(0f, 1f),
+                    completionRate = if (scheduledCount == 0) 0f else (completedCount.toFloat() / scheduledCount).coerceIn(0f, 1f),
                     completedCount = completedCount,
-                    totalCount = habits.size
+                    totalCount = scheduledCount
                 )
             )
         }
@@ -383,7 +390,12 @@ class HabitRepository(
         val categoryCompletion = habits.groupBy { it.category.ifBlank { "Other" } }.map { (category, list) ->
             val ids = list.map { it.id }.toSet()
             val done = completedLogs.count { it.habitId in ids && it.date in weekDates }
-            category to (done * 100 / (list.size * 7)).coerceIn(0, 100)
+            // Only count days each habit was actually scheduled
+            val scheduled = weeklyStats.sumOf { stat ->
+                val dow = dayOfWeekOf(stat.dateString)
+                list.count { it.isScheduledOn(dow) }
+            }
+            category to (if (scheduled == 0) 0 else done * 100 / scheduled).coerceIn(0, 100)
         }.sortedByDescending { it.second }
 
         // Time invested: minutes logged on minute-based habits over the last 12 weeks

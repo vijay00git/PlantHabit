@@ -1,5 +1,6 @@
 package com.example.service
 
+import com.example.data.model.isScheduledOn
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -29,6 +30,11 @@ object ReminderScheduler {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
             if (timeInMillis <= System.currentTimeMillis()) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+            // Skip forward to the next day this habit is scheduled on
+            var guard = 0
+            while (!habit.isScheduledOn(get(Calendar.DAY_OF_WEEK)) && guard++ < 7) {
                 add(Calendar.DAY_OF_YEAR, 1)
             }
         }

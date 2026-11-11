@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.data.model.scheduleLabel
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -269,7 +270,8 @@ fun HabitCard(
                         val progressText = if (isStepOrWater) {
                             "%,d / %,d %s".format(currentProgress, target, habit.unit)
                         } else {
-                            if (isDone) "Completed · nice work!" else "Tap or swipe → to complete"
+                            if (isDone) "Completed · nice work!"
+                            else habit.scheduleLabel().let { if (it == "Every day") "Tap or swipe → to complete" else "$it · tap to complete" }
                         }
                         Text(
                             text = progressText,

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.data.model.scheduleLabel
+import com.example.data.model.scheduledDays
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.TextButton
@@ -136,6 +138,8 @@ data class HabitDraft(
     val reminderEnabled: Boolean,
     val syncGoogleCalendar: Boolean,
     val iconName: String,
+    /** Calendar.DAY_OF_WEEK values (1 = Sun … 7 = Sat) the habit repeats on. */
+    val days: Set<Int> = (1..7).toSet(),
 )
 
 /**
@@ -166,13 +170,14 @@ fun CreateHabitDialog(
     // Icon follows the title until the user picks one themselves
     var pickedIcon by remember { mutableStateOf(initial?.iconName) }
     val iconName = pickedIcon ?: AppIcon.guessFromTitle(title, category).key
+    var days by remember { mutableStateOf(initial?.scheduledDays() ?: (1..7).toSet()) }
     var isSaving by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
     // Keep categories/units an existing habit uses even if they're not in the default lists
     val categories = (listOf("Health", "Mindfulness", "Fitness", "Productivity", "Learning") + listOfNotNull(initial?.category)).distinct()
     val units = (listOf("tasks", "ml", "steps", "mins", "pages", "km", "glasses") + listOfNotNull(initial?.unit)).distinct()
-    val canSave = title.isNotBlank() && !isSaving
+    val canSave = title.isNotBlank() && days.isNotEmpty() && !isSaving
 
     fun closeAnimated() {
         scope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -198,6 +203,7 @@ fun CreateHabitDialog(
                     reminderEnabled = reminderEnabled,
                     syncGoogleCalendar = syncGoogleCalendar,
                     iconName = iconName,
+                    days = days,
                 )
             )
         }
@@ -350,6 +356,43 @@ fun CreateHabitDialog(
                                 tint = if (selected) c.onAccent else accent.color,
                                 modifier = Modifier.size(22.dp)
                             )
+                        }
+                    }
+                }
+            }
+
+            // Repeat days
+            FieldSection(label = "REPEAT · ${scheduleLabel(days).uppercase()}") {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            "Every day" to (1..7).toSet(),
+                            "Weekdays" to setOf(2, 3, 4, 5, 6),
+                            "Weekends" to setOf(1, 7),
+                        ).forEach { (label, preset) ->
+                            UnitChip(label = label, selected = days == preset, onClick = { days = preset })
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Monday-first week
+                        listOf(2 to "M", 3 to "T", 4 to "W", 5 to "T", 6 to "F", 7 to "S", 1 to "S").forEach { (dow, letter) ->
+                            val on = dow in days
+                            val bg by animateColorAsState(if (on) c.primary else c.cardMuted, tween(200), label = "dayBg")
+                            val fg by animateColorAsState(if (on) c.onPrimary else c.textSecondary, tween(200), label = "dayFg")
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(bg)
+                                    .bounceClick { days = if (on) days - dow else days + dow }
+                                    .testTag("day_toggle_$dow"),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(letter, style = MaterialTheme.typography.labelLarge, color = fg)
+                            }
                         }
                     }
                 }
