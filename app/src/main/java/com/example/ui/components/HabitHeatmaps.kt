@@ -181,7 +181,11 @@ private fun HabitMonthCard(
         }
     }
     val doneDays = levels.count { it.second >= 1f }
-    val scheduledSoFar = levels.count { it.third && it.first <= today }
+    // Only count days since the habit existed (or the earliest day it was logged)
+    val since = remember(habit, logsByDate) {
+        (listOf(heatFmt.format(Date(habit.createdAt))) + logsByDate.keys).min()
+    }
+    val scheduledSoFar = levels.count { it.third && it.first <= today && it.first >= since }
 
     Column(
         modifier = modifier
