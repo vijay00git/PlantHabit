@@ -1,5 +1,6 @@
 package com.example.data.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -81,7 +82,13 @@ data class ChallengeEntity(
     val tasksJson: String = "",
     val goalTarget: Float = 0f,
     val goalCurrent: Float = 0f,
-    val goalUnit: String = ""
+    val goalUnit: String = "",
+    /** When the user joined (epoch millis); 0 = not started. Drives the real "Day X of Y". */
+    @ColumnInfo(defaultValue = "0")
+    val startedAt: Long = 0L,
+    /** AppIcon key for this challenge; blank = use the category icon. */
+    @ColumnInfo(defaultValue = "")
+    val icon: String = ""
 ) {
     fun getParsedTasks(): List<ChallengeTaskItem> {
         val list = mutableListOf<ChallengeTaskItem>()

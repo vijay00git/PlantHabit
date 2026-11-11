@@ -133,12 +133,8 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         syncGoogleCalendar: Boolean
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            val iconName = when (category.lowercase()) {
-                "health" -> "water"
-                "fitness" -> "walk"
-                "mindfulness" -> "sparkle"
-                else -> "alarm"
-            }
+            // Pick a fitting icon from the title ("Read 20 pages" → book), else by category.
+            val iconName = com.example.ui.components.AppIcon.guessFromTitle(title, category).key
             val habit = HabitEntity(
                 title = title,
                 category = category,
@@ -250,6 +246,21 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
                 onFailure = { error ->
                     onResult(false, "Invalid JSON: ${error.localizedMessage ?: "Please check format"}")
                 }
+            )
+        }
+    }
+
+    /** Wipes habits, logs, moods and challenge progress; optionally our calendar events too. */
+    fun clearAllData(removeCalendarEvents: Boolean, onDone: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.resetAllData()
+            val removed = if (removeCalendarEvents) CalendarSyncManager.deleteAppEvents(getApplication()) else 0
+            closeChallengeDetails()
+            refreshAnalytics()
+            if (removeCalendarEvents) loadCalendarEvents()
+            onDone(
+                if (removeCalendarEvents) "All data cleared and $removed calendar events removed. Fresh start 🌱"
+                else "All data cleared. Fresh start 🌱"
             )
         }
     }

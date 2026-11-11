@@ -41,7 +41,9 @@ data class MoodOption(
 fun MoodTrackerCard(
     currentMood: MoodLogEntity?,
     onSelectMood: (Int, String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** % of Good/Great check-ins this week; null hides the badge (no check-ins yet). */
+    goodPercent: Int? = null,
 ) {
     val c = PlantTheme.colors
     val moods = listOf(
@@ -77,15 +79,15 @@ fun MoodTrackerCard(
                     )
                 }
 
-                // Balance badge
-                Box(
+                // Balance badge (real data only)
+                if (goodPercent != null) Box(
                     modifier = Modifier
                         .clip(AppShapes.pill)
                         .background(c.primarySoft)
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "85% Good or great",
+                        text = "$goodPercent% Good or great",
                         style = MaterialTheme.typography.labelSmall,
                         color = c.primary
                     )

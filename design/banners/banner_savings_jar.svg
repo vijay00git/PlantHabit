@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF3C8"/>
+      <stop offset="0.6" stop-color="#FFE08A"/>
+      <stop offset="1" stop-color="#FACC32"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#1FA65A"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1FA65A"/>
+      <stop offset="1" stop-color="#13803F"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E6F7FF" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#CDEFFF" stop-opacity="0.3"/>
+    </linearGradient>
+    <radialGradient id="coin" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#FFE98A"/>
+      <stop offset="0.7" stop-color="#F2A80F"/>
+      <stop offset="1" stop-color="#D98C00"/>
+    </radialGradient>
+    <linearGradient id="lid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2BC56B"/>
+      <stop offset="1" stop-color="#13803F"/>
+    </linearGradient>
+    <clipPath id="jarClip">
+      <path d="M-105,-150 C-125,-150 -130,-130 -130,-110 V-20 C-130,10 -110,30 -80,30 H80 C110,30 130,10 130,-20 V-110 C130,-130 125,-150 105,-150Z"/>
+    </clipPath>
+    <g id="c">
+      <circle r="24" fill="url(#coin)"/>
+      <circle r="17" fill="none" stroke="#D98C00" stroke-width="2.5" opacity="0.6"/>
+    </g>
+    <g id="flat">
+      <ellipse cx="0" cy="6" rx="42" ry="12" fill="#D98C00"/>
+      <rect x="-42" y="-6" width="84" height="12" fill="#E89A06"/>
+      <ellipse cx="0" cy="-6" rx="42" ry="12" fill="#FACC32"/>
+      <ellipse cx="0" cy="-6" rx="30" ry="8" fill="none" stroke="#F2A80F" stroke-width="2.5"/>
+    </g>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#bg)"/>
+  <circle cx="860" cy="230" r="280" fill="url(#halo)"/>
+  <!-- soft background dots -->
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="120" cy="80" r="40"/>
+    <circle cx="420" cy="60" r="18"/>
+    <circle cx="560" cy="160" r="10"/>
+    <circle cx="1140" cy="90" r="26"/>
+  </g>
+
+  <!-- hills -->
+  <path d="M0,390 C200,350 380,360 560,372 C760,386 900,340 1200,350 L1200,500 L0,500Z" fill="url(#g1)"/>
+  <path d="M0,440 C220,420 420,426 620,436 C820,446 980,420 1200,424 L1200,500 L0,500Z" fill="url(#g2)"/>
+
+  <!-- coin stacks left of jar -->
+  <g transform="translate(680 420)">
+    <ellipse cx="0" cy="10" rx="56" ry="12" fill="#0B5A2C" opacity="0.3"/>
+    <use href="#flat" transform="translate(0 0)"/>
+    <use href="#flat" transform="translate(2 -16)"/>
+    <use href="#flat" transform="translate(-1 -32)"/>
+  </g>
+  <g transform="translate(1050 422)">
+    <ellipse cx="0" cy="10" rx="56" ry="12" fill="#0B5A2C" opacity="0.3"/>
+    <use href="#flat" transform="translate(0 0)"/>
+    <use href="#flat" transform="translate(-2 -16)"/>
+    <use href="#flat" transform="translate(1 -32)"/>
+    <use href="#flat" transform="translate(-1 -48)"/>
+    <use href="#flat" transform="translate(2 -64)"/>
+  </g>
+  <g transform="translate(1135 430) scale(0.8)">
+    <use href="#flat"/>
+    <use href="#flat" transform="translate(2 -16)"/>
+  </g>
+
+  <!-- jar -->
+  <g transform="translate(865 400)">
+    <ellipse cx="0" cy="32" rx="150" ry="18" fill="#0B5A2C" opacity="0.3"/>
+    <g clip-path="url(#jarClip)">
+      <rect x="-140" y="-160" width="280" height="200" fill="#DFF4FF" opacity="0.5"/>
+      <g>
+        <use href="#c" x="-100" y="10"/><use href="#c" x="-55" y="12"/><use href="#c" x="-8" y="8"/><use href="#c" x="40" y="12"/><use href="#c" x="88" y="10"/>
+        <use href="#c" x="-115" y="-28"/><use href="#c" x="-72" y="-30"/><use href="#c" x="-26" y="-25"/><use href="#c" x="20" y="-32"/><use href="#c" x="64" y="-26"/><use href="#c" x="108" y="-30"/>
+        <use href="#c" x="-96" y="-66"/><use href="#c" x="-50" y="-70"/><use href="#c" x="-4" y="-64"/><use href="#c" x="42" y="-70"/><use href="#c" x="90" y="-66"/>
+        <use href="#c" x="-70" y="-102"/><use href="#c" x="-24" y="-100"/><use href="#c" x="22" y="-106"/><use href="#c" x="66" y="-98"/>
+      </g>
+      <!-- soil patch on top of coins -->
+      <ellipse cx="0" cy="-116" rx="64" ry="16" fill="#8A5527"/><ellipse cx="0" cy="-120" rx="52" ry="10" fill="#A66A33"/>
+    </g>
+    <path d="M-105,-150 C-125,-150 -130,-130 -130,-110 V-20 C-130,10 -110,30 -80,30 H80 C110,30 130,10 130,-20 V-110 C130,-130 125,-150 105,-150Z" fill="url(#glass)" stroke="#FFFFFF" stroke-width="4" stroke-opacity="0.8"/>
+    <rect x="-112" y="-128" width="14" height="110" rx="7" fill="#FFFFFF" opacity="0.7"/>
+    <rect x="-112" y="-4" width="14" height="14" rx="7" fill="#FFFFFF" opacity="0.7"/>
+    <!-- rim -->
+    <rect x="-112" y="-172" width="224" height="26" rx="10" fill="url(#lid)"/>
+    <rect x="-112" y="-172" width="224" height="8" rx="4" fill="#4ADE80" opacity="0.7"/>
+
+    <!-- sprout -->
+    <path d="M0,-118 C2,-170 -6,-210 4,-250" fill="none" stroke="#13803F" stroke-width="9" stroke-linecap="round"/>
+    <path d="M2,-200 C-30,-215 -80,-210 -96,-250 C-50,-270 -10,-240 2,-200Z" fill="url(#g1)"/>
+    <path d="M-2,-200 C-30,-218 -70,-230 -90,-246" fill="none" stroke="#13803F" stroke-width="3" opacity="0.5"/>
+    <path d="M4,-236 C30,-260 80,-262 104,-300 C56,-318 10,-284 4,-236Z" fill="#4ADE80"/>
+    <path d="M6,-238 C40,-262 74,-280 98,-296" fill="none" stroke="#1FA65A" stroke-width="3" opacity="0.6"/>
+    <path d="M4,-250 C-10,-280 0,-300 14,-316 C26,-296 22,-270 4,-250Z" fill="#1FA65A"/>
+  </g>
+
+  <!-- falling coin -->
+  <g transform="translate(1010 150) rotate(-20)">
+    <use href="#c"/>
+  </g>
+  <g stroke="#F2A80F" stroke-width="4" stroke-linecap="round" opacity="0.6">
+    <path d="M1030,110 L1040,90"/>
+    <path d="M1048,122 L1062,104"/>
+  </g>
+
+  <!-- sparkles -->
+  <g fill="#FFFFFF">
+    <use href="#sp" transform="translate(720 200) scale(1.6)"/>
+    <use href="#sp" transform="translate(1080 260) scale(1.2)"/>
+    <use href="#sp" transform="translate(640 300) scale(0.9)"/>
+  </g>
+  <g fill="#F2A80F">
+    <use href="#sp" transform="translate(980 60) scale(1.1)"/>
+    <use href="#sp" transform="translate(760 90) scale(0.8)"/>
+  </g>
+</svg>

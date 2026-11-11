@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E6F6FE"/>
+      <stop offset="0.7" stop-color="#C6E9FB"/>
+      <stop offset="1" stop-color="#A9DDF8"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4EBD8"/>
+      <stop offset="1" stop-color="#E6D7B8"/>
+    </linearGradient>
+    <linearGradient id="shelf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E7EEF2"/>
+    </linearGradient>
+    <linearGradient id="pot" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FF9A62"/>
+      <stop offset="1" stop-color="#E86A2C"/>
+    </linearGradient>
+    <path id="leaf" d="M0,0 C10,-20 34,-26 52,-22 C44,-6 22,6 0,0Z"/>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#wall)"/>
+  <circle cx="870" cy="220" r="300" fill="url(#halo)"/>
+  <!-- floor -->
+  <rect x="0" y="420" width="1200" height="80" fill="url(#floor)"/>
+  <rect x="0" y="414" width="1200" height="8" fill="#FFFFFF"/>
+  <!-- rug -->
+  <ellipse cx="830" cy="460" rx="250" ry="26" fill="#A597FF" opacity="0.55"/>
+  <ellipse cx="830" cy="460" rx="220" ry="18" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="10 10" opacity="0.7"/>
+
+  <!-- wall shelves -->
+  <g>
+    <!-- top shelf -->
+    <rect x="700" y="160" width="350" height="14" rx="4" fill="url(#shelf)"/>
+    <rect x="700" y="172" width="350" height="6" rx="3" fill="#0E5E99" opacity="0.15"/>
+    <!-- books upright -->
+    <rect x="720" y="88" width="22" height="72" rx="4" fill="#2AA7E8"/>
+    <rect x="744" y="96" width="20" height="64" rx="4" fill="#1FA65A"/>
+    <rect x="766" y="80" width="24" height="80" rx="4" fill="#FF7F3F"/>
+    <rect x="792" y="92" width="20" height="68" rx="4" fill="#7C6CF0"/>
+    <rect x="724" y="100" width="14" height="4" rx="2" fill="#FFFFFF" opacity="0.6"/>
+    <rect x="770" y="92" width="16" height="4" rx="2" fill="#FFFFFF" opacity="0.6"/>
+    <!-- storage boxes -->
+    <rect x="840" y="104" width="92" height="56" rx="8" fill="#FACC32"/>
+    <rect x="872" y="122" width="28" height="8" rx="4" fill="#FFFFFF" opacity="0.7"/>
+    <!-- small plant -->
+    <g transform="translate(1000 160)">
+      <path d="M-22,-40 H22 L18,0 H-18Z" fill="#F4FAF2"/>
+      <path d="M0,-40 C-6,-70 -30,-80 -40,-96 C-12,-98 2,-74 0,-40Z" fill="#1FA65A"/>
+      <path d="M0,-40 C6,-72 28,-84 40,-100 C46,-74 24,-58 0,-40Z" fill="#4ADE80"/>
+    </g>
+
+    <!-- lower shelf -->
+    <rect x="660" y="290" width="390" height="14" rx="4" fill="url(#shelf)"/>
+    <rect x="660" y="302" width="390" height="6" rx="3" fill="#0E5E99" opacity="0.15"/>
+    <rect x="680" y="214" width="110" height="76" rx="10" fill="#2AA7E8"/>
+    <rect x="718" y="236" width="34" height="9" rx="4.5" fill="#FFFFFF" opacity="0.7"/>
+    <rect x="800" y="214" width="110" height="76" rx="10" fill="#5CC6F7"/>
+    <rect x="838" y="236" width="34" height="9" rx="4.5" fill="#FFFFFF" opacity="0.7"/>
+    <rect x="920" y="214" width="110" height="76" rx="10" fill="#2AA7E8"/>
+    <rect x="958" y="236" width="34" height="9" rx="4.5" fill="#FFFFFF" opacity="0.7"/>
+  </g>
+
+  <!-- big potted plant on floor -->
+  <g transform="translate(1115 430) scale(0.85)">
+    <ellipse cx="0" cy="4" rx="56" ry="8" fill="#0E5E99" opacity="0.2"/>
+    <path d="M0,-80 C-20,-130 -70,-140 -86,-190 C-30,-190 -4,-140 0,-80Z" fill="#13803F"/>
+    <path d="M0,-80 C10,-150 50,-170 80,-210 C90,-150 40,-110 0,-80Z" fill="#1FA65A"/>
+    <path d="M0,-80 C-6,-130 6,-180 -6,-230 C20,-190 22,-130 0,-80Z" fill="#4ADE80"/>
+    <path d="M0,-80 C20,-110 60,-110 86,-130 C70,-90 30,-80 0,-80Z" fill="#4ADE80"/>
+    <path d="M-44,-84 H44 L34,0 H-34Z" fill="url(#pot)"/>
+    <rect x="-48" y="-92" width="96" height="16" rx="6" fill="#FF7F3F"/>
+  </g>
+
+  <!-- basket on floor -->
+  <g transform="translate(770 430)">
+    <ellipse cx="0" cy="4" rx="70" ry="9" fill="#0E5E99" opacity="0.2"/>
+    <path d="M-66,-70 H66 L54,0 H-54Z" fill="#F2C27A"/>
+    <g stroke="#D9A04D" stroke-width="3">
+      <path d="M-60,-48 H60 M-57,-26 H57"/>
+      <path d="M-30,-70 L-26,0 M0,-70 V0 M30,-70 L26,0"/>
+    </g>
+    <rect x="-70" y="-78" width="140" height="12" rx="6" fill="#D9A04D"/>
+  </g>
+
+  <!-- broom leaning -->
+  <g transform="translate(920 432) rotate(14)">
+    <rect x="-5" y="-250" width="10" height="190" rx="5" fill="#C98A4B"/>
+    <path d="M-30,-60 H30 L44,0 H-44Z" fill="#FACC32"/>
+    <rect x="-32" y="-70" width="64" height="14" rx="5" fill="#EF4F72"/>
+    <g stroke="#E0A800" stroke-width="2.5">
+      <path d="M-20,-50 L-26,-4 M0,-50 V-4 M20,-50 L26,-4"/>
+    </g>
+  </g>
+
+  <!-- sparkles showing clean -->
+  <g fill="#FACC32">
+    <use href="#sp" transform="translate(980 340) scale(1.8)"/>
+    <use href="#sp" transform="translate(1040 370) scale(1)"/>
+    <use href="#sp" transform="translate(660 120) scale(1.2)"/>
+  </g>
+  <g fill="#FFFFFF">
+    <use href="#sp" transform="translate(860 360) scale(1.3)"/>
+    <use href="#sp" transform="translate(1140 110) scale(1.2)"/>
+    <use href="#sp" transform="translate(620 260) scale(0.9)"/>
+  </g>
+  <!-- soft wall dots -->
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="150" cy="100" r="50"/>
+    <circle cx="380" cy="60" r="18"/>
+    <circle cx="520" cy="180" r="10"/>
+  </g>
+</svg>

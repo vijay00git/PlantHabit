@@ -77,6 +77,25 @@ interface HabitDao {
     @Query("DELETE FROM challenges WHERE id = :id")
     suspend fun deleteChallenge(id: String)
 
+    // Reset ("clear my data") — keeps challenge definitions, wipes everything the user logged
+    @Query("DELETE FROM habits")
+    suspend fun deleteAllHabits()
+
+    @Query("DELETE FROM habit_logs")
+    suspend fun deleteAllLogs()
+
+    @Query("DELETE FROM mood_logs")
+    suspend fun deleteAllMoodLogs()
+
+    @Query("UPDATE challenges SET isJoined = 0, currentDay = 1, completedTasksToday = 0, goalCurrent = 0, startedAt = 0")
+    suspend fun resetAllChallengeProgress()
+
+    @Query("SELECT * FROM challenges")
+    suspend fun getAllChallengesList(): List<ChallengeEntity>
+
+    @Query("SELECT * FROM mood_logs ORDER BY date DESC")
+    suspend fun getAllMoodLogs(): List<MoodLogEntity>
+
     // Mood Tracking
     @Query("SELECT * FROM mood_logs ORDER BY date DESC")
     fun getAllMoodLogsFlow(): Flow<List<MoodLogEntity>>

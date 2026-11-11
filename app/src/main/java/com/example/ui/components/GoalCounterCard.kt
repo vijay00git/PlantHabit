@@ -73,7 +73,8 @@ fun GoalCounterCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = goalChallenge.subtitle,
+                            text = "Day ${goalChallenge.currentDay} of ${goalChallenge.durationDays} · " +
+                                "${(goalChallenge.durationDays - goalChallenge.currentDay).coerceAtLeast(0)} days left",
                             style = MaterialTheme.typography.bodySmall,
                             color = c.textSecondary,
                             maxLines = 1,
@@ -134,9 +135,9 @@ fun GoalCounterCard(
                         color = c.textPrimary
                     )
                     Text(
-                        text = "On track • About 8.7 %s a week to finish on time".format(goalChallenge.goalUnit),
+                        text = goalPaceText(goalChallenge),
                         style = MaterialTheme.typography.bodySmall,
-                        color = c.primary
+                        color = if (isGoalOnTrack(goalChallenge)) c.primary else c.sunrise
                     )
                 }
             }
@@ -183,4 +184,20 @@ fun GoalCounterCard(
             }
         }
     }
+}
+
+/** On track when progress is at least where an even pace would be by today. */
+private fun isGoalOnTrack(ch: com.example.data.model.ChallengeEntity): Boolean {
+    val expected = ch.goalTarget * (ch.currentDay - 1).coerceAtLeast(0) / ch.durationDays.coerceAtLeast(1)
+    return ch.goalCurrent >= expected
+}
+
+private fun goalPaceText(ch: com.example.data.model.ChallengeEntity): String {
+    val remaining = (ch.goalTarget - ch.goalCurrent).coerceAtLeast(0f)
+    if (remaining <= 0f) return "Goal reached! 🎉"
+    val daysLeft = (ch.durationDays - ch.currentDay + 1).coerceAtLeast(1)
+    val perWeek = remaining / daysLeft * 7
+    val pace = if (perWeek >= 10) "%.0f".format(perWeek) else "%.1f".format(perWeek)
+    val status = if (isGoalOnTrack(ch)) "On track" else "Behind pace"
+    return "$status • About $pace ${ch.goalUnit} a week to finish on time"
 }

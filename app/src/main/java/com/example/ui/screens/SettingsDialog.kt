@@ -1,5 +1,13 @@
 package com.example.ui.screens
 
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -74,10 +82,25 @@ fun SettingsDialog(
     isCalendarSyncEnabled: Boolean,
     onSyncNow: () -> Unit,
     onSendTestReminder: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    /** Clears all user data; the flag says whether to also delete our calendar events. */
+    onClearAllData: (removeCalendarEvents: Boolean) -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
+    var confirmClear by remember { mutableStateOf(false) }
+
+    if (confirmClear) {
+        ClearDataConfirmDialog(
+            canRemoveCalendarEvents = isCalendarSyncEnabled,
+            onConfirm = { removeEvents ->
+                confirmClear = false
+                haptics.reject()
+                onClearAllData(removeEvents)
+            },
+            onCancel = { confirmClear = false }
+        )
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Box(
@@ -194,9 +217,94 @@ fun SettingsDialog(
                         onClick = onSendTestReminder
                     )
                 }
+
+                // Data
+                SettingsGroup(title = "YOUR DATA", index = 3) {
+                    SettingsRowHeader(
+                        icon = Icons.Default.DeleteSweep,
+                        tint = c.berry,
+                        bubble = c.berrySoft,
+                        title = "Start fresh",
+                        subtitle = "Clear all habits, check-ins, moods and challenge progress. Challenges, your banner photos and settings stay."
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    SettingsActionButton(
+                        text = "Clear all data",
+                        icon = Icons.Default.DeleteSweep,
+                        container = c.berrySoft,
+                        content = c.berry,
+                        modifier = Modifier.testTag("btn_clear_all_data"),
+                        onClick = { confirmClear = true }
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun ClearDataConfirmDialog(
+    canRemoveCalendarEvents: Boolean,
+    onConfirm: (removeCalendarEvents: Boolean) -> Unit,
+    onCancel: () -> Unit,
+) {
+    val c = PlantTheme.colors
+    var removeEvents by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onCancel,
+        containerColor = c.surface,
+        shape = AppShapes.xl,
+        icon = {
+            IconBubble(background = c.berrySoft, size = 52.dp) {
+                Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = c.berry, modifier = Modifier.size(26.dp))
+            }
+        },
+        title = {
+            Text("Clear all data?", style = MaterialTheme.typography.titleLarge, color = c.textPrimary)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "This deletes every habit and its reminders, all check-ins and mood logs, and resets " +
+                        "every challenge to not-joined. Challenges, banner photos and your theme are kept.\n\n" +
+                        "This can't be undone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.textSecondary
+                )
+                if (canRemoveCalendarEvents) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(AppShapes.medium)
+                            .bounceClick(pressedScale = 0.98f) { removeEvents = !removeEvents }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = removeEvents,
+                            onCheckedChange = { removeEvents = it },
+                            colors = CheckboxDefaults.colors(checkedColor = c.berry, uncheckedColor = c.textMuted)
+                        )
+                        Text(
+                            "Also remove PlantHabit events from my Google Calendar",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.textPrimary
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(removeEvents) }, modifier = Modifier.testTag("btn_confirm_clear")) {
+                Text("Clear everything", style = MaterialTheme.typography.labelLarge, color = c.berry)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text("Cancel", style = MaterialTheme.typography.labelLarge, color = c.textSecondary)
+            }
+        }
+    )
 }
 
 @Composable

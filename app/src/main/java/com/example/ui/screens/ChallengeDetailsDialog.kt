@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.iconAccent
+import com.example.ui.components.AppIcon
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -389,7 +391,7 @@ private fun DetailsHeader(
             )
             // Large faded category glyph for texture
             Icon(
-                imageVector = challengeCategoryIcon(challenge.category),
+                imageVector = challengeIcon(challenge),
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.22f),
                 modifier = Modifier
@@ -531,14 +533,9 @@ private fun TaskRow(
     modifier: Modifier = Modifier,
 ) {
     val c = PlantTheme.colors
-    val (iconVector, taskAccent) = when (task.iconName) {
-        "sun" -> Icons.Default.WbSunny to AccentPair(c.sun, c.sunSoft)
-        "moon" -> Icons.Default.NightsStay to AccentPair(c.lavender, c.lavenderSoft)
-        "walk" -> Icons.Default.DirectionsWalk to AccentPair(c.sunrise, c.sunriseSoft)
-        "water" -> Icons.Default.WaterDrop to AccentPair(c.sky, c.skySoft)
-        "alarm" -> Icons.Default.Alarm to AccentPair(c.berry, c.berrySoft)
-        else -> Icons.Default.AutoAwesome to fallbackAccent
-    }
+    val taskIcon = AppIcon.of(task.iconName)
+    val iconVector = taskIcon.vector
+    val taskAccent = if (task.iconName.isBlank()) fallbackAccent else c.iconAccent(taskIcon)
 
     Row(
         modifier = modifier

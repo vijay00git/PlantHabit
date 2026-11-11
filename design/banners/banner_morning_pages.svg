@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFE3CC"/>
+      <stop offset="0.7" stop-color="#FFC9A6"/>
+      <stop offset="1" stop-color="#FFB38A"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5CC6F7"/>
+      <stop offset="0.5" stop-color="#FFB38A"/>
+      <stop offset="1" stop-color="#FF7F3F"/>
+    </linearGradient>
+    <radialGradient id="beam" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF4C2" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFF4C2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8804F"/>
+      <stop offset="1" stop-color="#B85A33"/>
+    </linearGradient>
+    <linearGradient id="journal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2BC56B"/>
+      <stop offset="1" stop-color="#13803F"/>
+    </linearGradient>
+    <clipPath id="winClip"><rect x="-150" y="-150" width="300" height="230" rx="16"/></clipPath>
+    <path id="leaf" d="M0,0 C10,-20 34,-26 52,-22 C44,-6 22,6 0,0Z"/>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#wall)"/>
+
+  <!-- window -->
+  <g transform="translate(940 200)">
+    <rect x="-166" y="-166" width="332" height="262" rx="24" fill="#FFF1E6"/>
+    <g clip-path="url(#winClip)">
+      <rect x="-150" y="-150" width="300" height="230" fill="url(#sky)"/>
+      <circle cx="10" cy="30" r="110" fill="url(#beam)"/>
+      <circle cx="10" cy="40" r="56" fill="#FACC32"/>
+      <circle cx="10" cy="40" r="44" fill="#FFE27A"/>
+      <path d="M-150,60 C-90,30 -40,40 10,52 C70,64 110,30 150,40 V80 H-150Z" fill="#1FA65A"/>
+      <path d="M-150,72 C-80,58 0,70 60,66 C100,64 130,60 150,62 V80 H-150Z" fill="#13803F"/>
+      <g fill="#FFFFFF" opacity="0.9">
+        <g transform="translate(-80 -90)"><ellipse cx="0" cy="6" rx="40" ry="10"/><circle cx="-10" cy="0" r="13"/><circle cx="12" cy="-4" r="17"/></g>
+        <g transform="translate(90 -50) scale(0.7)"><ellipse cx="0" cy="6" rx="40" ry="10"/><circle cx="-10" cy="0" r="13"/><circle cx="12" cy="-4" r="17"/></g>
+      </g>
+      <g fill="none" stroke="#B4473A" stroke-width="2.5" stroke-linecap="round" opacity="0.6">
+        <path d="M-40,-40 q6,-6 12,0 q6,-6 12,0"/>
+      </g>
+    </g>
+    <path d="M0,-150 V80 M-150,-40 H150" stroke="#FFF1E6" stroke-width="10"/>
+    <rect x="-180" y="92" width="360" height="16" rx="6" fill="#FFF1E6"/>
+  </g>
+  <!-- sunbeam onto desk -->
+  <path d="M800,300 L1080,300 L1150,410 L700,410Z" fill="#FFF4C2" opacity="0.35"/>
+
+  <!-- small plant on sill -->
+  <g transform="translate(598 402) scale(1.35)">
+    <path d="M-20,-34 H20 L16,0 H-16Z" fill="#EF4F72"/>
+    <path d="M0,-34 C-2,-60 -24,-70 -34,-84 C-10,-86 2,-64 0,-34Z" fill="#1FA65A"/>
+    <path d="M0,-34 C4,-62 24,-74 36,-90 C42,-66 22,-50 0,-34Z" fill="#4ADE80"/>
+    <path d="M0,-34 C-2,-56 2,-78 -2,-96 C10,-80 10,-56 0,-34Z" fill="#13803F"/>
+  </g>
+
+  <!-- desk -->
+  <rect x="0" y="405" width="1200" height="95" fill="url(#desk)"/>
+  <rect x="0" y="398" width="1200" height="12" fill="#F4975F"/>
+
+  <!-- journal -->
+  <g transform="translate(790 402)">
+    <ellipse cx="0" cy="6" rx="190" ry="14" fill="#7A3519" opacity="0.3"/>
+    <path d="M-180,0 L-160,-80 H160 L180,0Z" fill="url(#journal)"/>
+    <path d="M-168,-6 L-150,-78 H-4 L0,-6Z" fill="#FFFDF7"/>
+    <path d="M168,-6 L150,-78 H4 L0,-6Z" fill="#F7F1E4"/>
+    <g stroke="#D9CDB2" stroke-width="3.5" stroke-linecap="round">
+      <path d="M-140,-62 H-30"/>
+      <path d="M-144,-48 H-24"/>
+      <path d="M-148,-34 H-60"/>
+      <path d="M-152,-20 H-18"/>
+      <path d="M30,-62 H110"/>
+      <path d="M26,-48 H90"/>
+    </g>
+    <path d="M0,-78 V-6" stroke="#D9CDB2" stroke-width="2"/>
+    <!-- ribbon -->
+    <path d="M60,-6 V24 L70,16 L80,24 V-6Z" fill="#EF4F72"/>
+    <!-- pen -->
+    <g transform="translate(70 -40) rotate(-28)">
+      <rect x="-6" y="-80" width="12" height="96" rx="6" fill="#7C6CF0"/>
+      <rect x="-6" y="-80" width="12" height="18" rx="6" fill="#5A4CC4"/>
+      <path d="M-6,14 L0,30 L6,14Z" fill="#0B1410"/>
+      <rect x="4" y="-74" width="3" height="40" rx="1.5" fill="#A597FF"/>
+    </g>
+    <path d="M30,-28 C40,-34 50,-24 60,-30" fill="none" stroke="#5A4CC4" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- coffee cup + saucer -->
+  <g transform="translate(1060 402)">
+    <ellipse cx="0" cy="-4" rx="76" ry="14" fill="#F4FAF2"/>
+    <ellipse cx="0" cy="-8" rx="56" ry="9" fill="#DCE8DA"/>
+    <path d="M48,-82 C84,-82 84,-36 46,-36" fill="none" stroke="#FF7F3F" stroke-width="12"/>
+    <path d="M-52,-100 H52 C52,-50 36,-14 0,-14 C-36,-14 -52,-50 -52,-100Z" fill="#FF7F3F"/>
+    <ellipse cx="0" cy="-100" rx="52" ry="11" fill="#E86A2C"/>
+    <ellipse cx="0" cy="-99" rx="44" ry="7" fill="#6B3A2A"/>
+    <path d="M-36,-86 C-34,-60 -26,-40 -16,-28" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.35"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.85">
+      <path d="M-14,-118 C-24,-134 -4,-146 -14,-164"/>
+      <path d="M12,-118 C2,-134 22,-146 12,-164"/>
+    </g>
+  </g>
+
+  <g fill="#FFFFFF">
+    <use href="#sp" transform="translate(700 210) scale(1.3)"/>
+    <use href="#sp" transform="translate(640 120) scale(0.8)"/>
+  </g>
+  <g fill="#FF7F3F">
+    <use href="#sp" transform="translate(740 300) scale(0.8)"/>
+  </g>
+</svg>

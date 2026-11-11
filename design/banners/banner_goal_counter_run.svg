@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF8A4C"/>
+      <stop offset="0.5" stop-color="#FFB25E"/>
+      <stop offset="0.8" stop-color="#FFD98A"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF4C2" stop-opacity="0.9"/>
+      <stop offset="0.4" stop-color="#FACC32" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FACC32" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF1B0"/>
+      <stop offset="1" stop-color="#FACC32"/>
+    </linearGradient>
+    <linearGradient id="m1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F59E6B"/>
+      <stop offset="1" stop-color="#EE8A5C"/>
+    </linearGradient>
+    <linearGradient id="m2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E5684A"/>
+      <stop offset="1" stop-color="#D45742"/>
+    </linearGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#1FA65A"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1FA65A"/>
+      <stop offset="1" stop-color="#13803F"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE6B8"/>
+      <stop offset="1" stop-color="#F4FAF2"/>
+    </linearGradient>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#sky)"/>
+
+  <!-- sun -->
+  <circle cx="860" cy="250" r="260" fill="url(#sunGlow)"/>
+  <circle cx="860" cy="250" r="120" fill="url(#sun)"/>
+  <g stroke="#FFF1B0" stroke-width="5" stroke-linecap="round" opacity="0.7">
+    <path d="M860,95 V70"/>
+    <path d="M750,140 L732,122"/>
+    <path d="M970,140 L988,122"/>
+    <path d="M705,250 H680"/>
+    <path d="M1015,250 H1040"/>
+  </g>
+
+  <!-- clouds -->
+  <g fill="#FFF4E0" opacity="0.85">
+    <g transform="translate(560 110)">
+      <ellipse cx="0" cy="10" rx="70" ry="16"/>
+      <circle cx="-20" cy="0" r="22"/>
+      <circle cx="18" cy="-6" r="28"/>
+    </g>
+    <g transform="translate(1110 170) scale(0.7)">
+      <ellipse cx="0" cy="10" rx="70" ry="16"/>
+      <circle cx="-20" cy="0" r="22"/>
+      <circle cx="18" cy="-6" r="28"/>
+    </g>
+  </g>
+  <!-- birds -->
+  <g fill="none" stroke="#B4473A" stroke-width="3" stroke-linecap="round" opacity="0.6">
+    <path d="M640,170 q8,-8 16,0 q8,-8 16,0"/>
+    <path d="M680,145 q6,-6 12,0 q6,-6 12,0"/>
+  </g>
+
+  <!-- mountains -->
+  <path d="M480,330 L640,200 L720,260 L820,170 L930,270 L1010,210 L1200,330 L1200,500 L480,500Z" fill="url(#m1)"/>
+  <path d="M820,170 L860,206 L842,214 L826,200 L806,214 L796,192Z" fill="#FFF1E0" opacity="0.85"/>
+  <path d="M640,200 L672,226 L655,232 L640,220 L626,232 L618,218Z" fill="#FFF1E0" opacity="0.85"/>
+  <path d="M0,330 L120,270 L230,320 L360,250 L520,340 L700,280 L860,330 L1000,280 L1200,340 L1200,500 L0,500Z" fill="url(#m2)"/>
+
+  <!-- hills -->
+  <path d="M0,370 C180,340 360,350 520,362 C700,375 820,330 1000,326 C1100,324 1160,335 1200,340 L1200,500 L0,500Z" fill="url(#g1)"/>
+  <path d="M0,430 C200,410 380,415 560,425 C760,436 940,400 1200,405 L1200,500 L0,500Z" fill="url(#g2)"/>
+
+  <!-- winding road -->
+  <path d="M640,500 C700,455 900,440 880,400 C865,372 800,372 820,350 C835,336 862,333 866,330 L878,330 C890,336 880,346 872,354 C850,376 960,384 975,410 C995,448 870,470 940,500Z" fill="url(#road)"/>
+  <path d="M790,500 C820,465 925,448 925,410 C922,388 846,382 848,358 C850,344 868,338 872,332" fill="none" stroke="#FFB25E" stroke-width="4" stroke-dasharray="14 12" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- trees -->
+  <g>
+    <rect x="1043" y="350" width="6" height="22" fill="#0B5A2C"/>
+    <ellipse cx="1046" cy="340" rx="20" ry="28" fill="#13803F"/>
+    <rect x="1093" y="340" width="7" height="26" fill="#0B5A2C"/>
+    <ellipse cx="1096" cy="326" rx="24" ry="34" fill="#1FA65A"/>
+    <rect x="700" y="372" width="5" height="18" fill="#0B5A2C"/>
+    <ellipse cx="702" cy="364" rx="15" ry="21" fill="#13803F"/>
+  </g>
+
+  <!-- runner -->
+  <g transform="translate(905 410) scale(1.35)">
+    <g stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.85">
+      <path d="M-30,-40 H-62"/>
+      <path d="M-26,-26 H-72"/>
+      <path d="M-32,-12 H-56"/>
+    </g>
+    <g fill="none" stroke="#0B1410" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M0,0 L16,14 L12,32"/>
+      <path d="M0,0 L-14,12 L-30,8"/>
+            <path d="M6,-30 L-8,-18 L-20,-24"/>
+    </g>
+    <g fill="none" stroke="#EF4F72" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1,-4 L7,-33" stroke-width="14"/>
+      <path d="M6,-30 L20,-18 L32,-24"/>
+    </g>
+    <circle cx="11" cy="-48" r="10" fill="#0B1410"/>
+  </g>
+
+  <!-- sparkles -->
+  <g fill="#FFF4C2">
+    <use href="#sp" transform="translate(1040 110) scale(1.2)"/>
+    <use href="#sp" transform="translate(700 90) scale(0.9)"/>
+    <use href="#sp" transform="translate(1150 260) scale(0.8)"/>
+  </g>
+</svg>

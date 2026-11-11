@@ -92,19 +92,16 @@ fun AnalyticsScreen(
     modifier: Modifier = Modifier
 ) {
     val c = PlantTheme.colors
+    // Shown for the moment before real analytics load
     val data = analyticsData ?: AnalyticsData(
-        totalHabits = 6,
-        overallCompletionRate = 78,
-        currentPlantStage = "Blooming Sprout",
-        activeStreakDays = 7,
-        longestStreakDays = 12,
+        totalHabits = 0,
+        overallCompletionRate = 0,
+        currentPlantStage = "Seedling",
+        activeStreakDays = 0,
+        longestStreakDays = 0,
         weeklyStats = emptyList(),
-        categoryStats = mapOf("Health" to 12, "Mindfulness" to 8, "Fitness" to 6),
-        timeOfDayStats = mapOf("Morning" to 14, "Afternoon" to 4, "Evening" to 8),
-        totalHabitsChecked = 666,
-        totalTimeInvestedMinutes = 2262,
-        moodGoodPercentage = 85,
-        moodTotalDays = 7
+        categoryStats = emptyMap(),
+        timeOfDayStats = emptyMap()
     )
 
     Box(
@@ -251,6 +248,13 @@ fun AnalyticsScreen(
                         )
 
                         val breakdown = data.timeInvestedBreakdown
+                        if (breakdown.isEmpty()) {
+                            Text(
+                                text = "Log progress on minute-based habits (like \"15 mins\") to see where your time goes.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = c.textMuted
+                            )
+                        }
                         breakdown.forEachIndexed { i, (habitTitle, minutes) ->
                             val itemHours = minutes / 60
                             val itemMins = minutes % 60
@@ -345,13 +349,13 @@ fun AnalyticsScreen(
                             }
 
                             Text(
-                                text = "${data.moodGoodPercentage}% Good or great",
+                                text = if (data.moodTotalDays == 0) "No check-ins yet" else "${data.moodGoodPercentage}% Good or great",
                                 style = MaterialTheme.typography.titleSmall,
                                 color = c.primary
                             )
 
                             Text(
-                                text = "Based on daily check-ins over the past ${data.moodTotalDays} days",
+                                text = if (data.moodTotalDays == 0) "Log your mood on the Today screen" else "Based on ${data.moodTotalDays} check-ins in the past 7 days",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = c.textSecondary
                             )
@@ -362,15 +366,13 @@ fun AnalyticsScreen(
 
             // Weekly Completion Chart
             item {
-                val days = if (data.weeklyStats.isNotEmpty()) data.weeklyStats else listOf(
-                    WeeklyStat("Sun", "1", 0.7f, 4, 6),
-                    WeeklyStat("Mon", "2", 0.85f, 5, 6),
-                    WeeklyStat("Tue", "3", 1.0f, 6, 6),
-                    WeeklyStat("Wed", "4", 0.5f, 3, 6),
-                    WeeklyStat("Thu", "5", 0.85f, 5, 6),
-                    WeeklyStat("Fri", "6", 1.0f, 6, 6),
-                    WeeklyStat("Sat", "7", 0.65f, 4, 6)
-                )
+                val days = data.weeklyStats.ifEmpty {
+                    val fmt = java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault())
+                    (6 downTo 0).map { back ->
+                        val day = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -back) }
+                        WeeklyStat(fmt.format(day.time), "", 0f, 0, 0)
+                    }
+                }
 
                 AnalyticsCard(index = 7) {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -400,12 +402,7 @@ fun AnalyticsScreen(
 
             // Category Breakdown
             item {
-                val categories = listOf(
-                    "Health" to 0.85f,
-                    "Mindfulness" to 0.70f,
-                    "Fitness" to 0.90f,
-                    "Productivity" to 0.60f
-                )
+                val categories = data.categoryCompletion.map { (name, pct) -> name to pct / 100f }
                 val reveal = rememberDrawIn(durationMs = 900, delayMs = 120)
 
                 AnalyticsCard(index = 8) {
@@ -415,6 +412,13 @@ fun AnalyticsScreen(
                             accent = AccentPair(c.lavender, c.lavenderSoft),
                             title = "Consistency by Category"
                         )
+                        if (categories.isEmpty()) {
+                            Text(
+                                text = "Add habits to see how consistent you are in each area.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = c.textMuted
+                            )
+                        }
 
                         categories.forEachIndexed { i, (category, ratio) ->
                             val accent = c.categoryColors(category)
@@ -469,10 +473,10 @@ fun AnalyticsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            MilestoneBadge(title = "3 Days", subtitle = "Spark", isUnlocked = true, index = 0)
-                            MilestoneBadge(title = "7 Days", subtitle = "Sprout", isUnlocked = data.activeStreakDays >= 7, index = 1)
-                            MilestoneBadge(title = "14 Days", subtitle = "Bloom", isUnlocked = data.activeStreakDays >= 14, index = 2)
-                            MilestoneBadge(title = "30 Days", subtitle = "Tree", isUnlocked = data.activeStreakDays >= 30, index = 3)
+                            MilestoneBadge(title = "3 Days", subtitle = "Spark", isUnlocked = data.longestStreakDays >= 3, index = 0)
+                            MilestoneBadge(title = "7 Days", subtitle = "Sprout", isUnlocked = data.longestStreakDays >= 7, index = 1)
+                            MilestoneBadge(title = "14 Days", subtitle = "Bloom", isUnlocked = data.longestStreakDays >= 14, index = 2)
+                            MilestoneBadge(title = "30 Days", subtitle = "Tree", isUnlocked = data.longestStreakDays >= 30, index = 3)
                         }
                     }
                 }

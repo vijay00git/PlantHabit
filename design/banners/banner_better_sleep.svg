@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0F1442"/>
+      <stop offset="0.55" stop-color="#2C2A78"/>
+      <stop offset="1" stop-color="#6A5BD8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFE9A3" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#A597FF" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#A597FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="moon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF3C4"/>
+      <stop offset="1" stop-color="#FACC32"/>
+    </linearGradient>
+    <linearGradient id="h1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5A4CC4"/>
+      <stop offset="1" stop-color="#3A3192"/>
+    </linearGradient>
+    <linearGradient id="h2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A3192"/>
+      <stop offset="1" stop-color="#231F63"/>
+    </linearGradient>
+    <linearGradient id="h3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#211C5A"/>
+      <stop offset="1" stop-color="#120F38"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4F1FF"/>
+      <stop offset="1" stop-color="#C9C0FF"/>
+    </linearGradient>
+    <radialGradient id="win"><stop offset="0" stop-color="#FACC32" stop-opacity="0.45"/><stop offset="1" stop-color="#FACC32" stop-opacity="0"/></radialGradient>
+    <mask id="crescent">
+      <rect width="1200" height="500" fill="#fff"/>
+      <circle cx="905" cy="140" r="100" fill="#000"/>
+    </mask>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#sky)"/>
+
+  <!-- stars -->
+  <g fill="#FFFFFF">
+    <circle cx="80" cy="60" r="2" opacity="0.8"/>
+    <circle cx="190" cy="120" r="1.6" opacity="0.6"/>
+    <circle cx="300" cy="50" r="2.2" opacity="0.9"/>
+    <circle cx="420" cy="140" r="1.5" opacity="0.6"/>
+    <circle cx="520" cy="70" r="2" opacity="0.8"/>
+    <circle cx="610" cy="170" r="1.4" opacity="0.5"/>
+    <circle cx="680" cy="45" r="1.8" opacity="0.8"/>
+    <circle cx="1080" cy="60" r="2" opacity="0.8"/>
+    <circle cx="1150" cy="160" r="1.6" opacity="0.6"/>
+    <circle cx="1010" cy="220" r="1.4" opacity="0.5"/>
+    <circle cx="140" cy="220" r="1.4" opacity="0.5"/>
+    <circle cx="360" cy="230" r="1.6" opacity="0.5"/>
+    <circle cx="1130" cy="270" r="1.4" opacity="0.5"/>
+  </g>
+  <g fill="#FACC32">
+    <use href="#sp" transform="translate(240 170) scale(1.1)"/>
+    <use href="#sp" transform="translate(560 120) scale(0.8)"/>
+    <use href="#sp" transform="translate(1100 110) scale(1.3)"/>
+    <use href="#sp" transform="translate(690 230) scale(0.7)"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.9">
+    <use href="#sp" transform="translate(440 60) scale(0.9)"/>
+    <use href="#sp" transform="translate(990 300) scale(0.7)"/>
+  </g>
+
+  <!-- moon -->
+  <circle cx="860" cy="185" r="210" fill="url(#glow)"/>
+  <g mask="url(#crescent)">
+    <circle cx="860" cy="185" r="115" fill="url(#moon)"/>
+    <circle cx="805" cy="215" r="14" fill="#F2A80F" opacity="0.25"/>
+    <circle cx="830" cy="265" r="9" fill="#F2A80F" opacity="0.25"/>
+    <circle cx="785" cy="160" r="8" fill="#F2A80F" opacity="0.2"/>
+  </g>
+
+  <!-- sleeping cloud -->
+  <g transform="translate(700 255)">
+    <g fill="url(#cloud)">
+      <ellipse cx="0" cy="20" rx="95" ry="32"/>
+      <circle cx="-45" cy="5" r="34"/>
+      <circle cx="10" cy="-12" r="46"/>
+      <circle cx="58" cy="8" r="30"/>
+    </g>
+    <g fill="none" stroke="#3A3192" stroke-width="4" stroke-linecap="round">
+      <path d="M-14,8 q8,8 16,0"/>
+      <path d="M22,8 q8,8 16,0"/>
+    </g>
+    <circle cx="-22" cy="22" r="7" fill="#EF4F72" opacity="0.35"/>
+    <circle cx="48" cy="22" r="7" fill="#EF4F72" opacity="0.35"/>
+    <g fill="#E9E5FF" opacity="0.8">
+      <circle cx="-110" cy="-10" r="5"/>
+      <circle cx="-130" cy="-32" r="8"/>
+      <circle cx="-158" cy="-60" r="11"/>
+    </g>
+  </g>
+
+  <!-- small drifting cloud -->
+  <g fill="#8E80F0" opacity="0.45" transform="translate(1060 205)">
+    <ellipse cx="0" cy="10" rx="60" ry="16"/>
+    <circle cx="-15" cy="2" r="20"/>
+    <circle cx="15" cy="-4" r="24"/>
+  </g>
+
+  <!-- hills -->
+  <path d="M0,360 C160,300 320,330 470,345 C640,362 760,300 900,290 C1030,282 1120,310 1200,300 L1200,500 L0,500Z" fill="url(#h1)"/>
+  <path d="M0,410 C150,380 300,385 430,400 C600,420 700,370 860,360 C1000,352 1100,380 1200,372 L1200,500 L0,500Z" fill="url(#h2)"/>
+
+  <!-- cosy house -->
+  <g transform="translate(985 300)">
+    <rect x="-46" y="0" width="92" height="66" rx="6" fill="#231F63"/>
+    <path d="M-60,4 L0,-46 L60,4Z" fill="#171447"/>
+    <rect x="22" y="-38" width="14" height="26" fill="#171447"/>
+    <rect x="-28" y="16" width="26" height="26" rx="4" fill="#FACC32"/>
+    <rect x="10" y="16" width="22" height="50" rx="4" fill="#120F38"/>
+    <circle cx="-15" cy="29" r="42" fill="url(#win)"/>
+    <path d="M-15,16 V42 M-28,29 H-2" stroke="#F2A80F" stroke-width="2.5"/>
+  </g>
+  <!-- trees -->
+  <g fill="#1B1752">
+    <path d="M1090,375 L1110,310 L1130,375Z"/>
+    <path d="M1120,378 L1145,300 L1170,378Z"/>
+    <path d="M880,380 L895,330 L910,380Z"/>
+  </g>
+
+  <path d="M0,455 C200,430 360,440 520,450 C700,462 860,425 1030,420 C1110,418 1160,428 1200,430 L1200,500 L0,500Z" fill="url(#h3)"/>
+  <!-- fireflies -->
+  <g fill="#FACC32">
+    <circle cx="820" cy="395" r="3" opacity="0.8"/>
+    <circle cx="1060" cy="410" r="2.5" opacity="0.7"/>
+    <circle cx="760" cy="430" r="2" opacity="0.6"/>
+  </g>
+</svg>

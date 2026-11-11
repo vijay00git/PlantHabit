@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2B2475"/>
+      <stop offset="0.45" stop-color="#6A5BD8"/>
+      <stop offset="0.75" stop-color="#C79BE8"/>
+      <stop offset="0.9" stop-color="#FFC3A8"/>
+    </linearGradient>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF1D6" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#FFD6E8" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#A597FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8D7CF2"/>
+      <stop offset="1" stop-color="#3B2F92"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3D3196"/>
+      <stop offset="1" stop-color="#271E6B"/>
+    </linearGradient>
+    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5A4CC4"/>
+      <stop offset="1" stop-color="#3A3192"/>
+    </linearGradient>
+    <g id="lotus">
+      <path d="M0,0 C-30,-6 -46,-20 -50,-34 C-30,-30 -12,-20 0,0Z" fill="#FF9AB4"/>
+      <path d="M0,0 C30,-6 46,-20 50,-34 C30,-30 12,-20 0,0Z" fill="#FF9AB4"/>
+      <path d="M0,0 C-22,-14 -28,-36 -22,-54 C-8,-40 -2,-20 0,0Z" fill="#FFB8CB"/>
+      <path d="M0,0 C22,-14 28,-36 22,-54 C8,-40 2,-20 0,0Z" fill="#FFB8CB"/>
+      <path d="M0,0 C-12,-20 -12,-46 0,-64 C12,-46 12,-20 0,0Z" fill="#FFD6E2"/>
+      <ellipse cx="0" cy="2" rx="44" ry="8" fill="#1FA65A"/>
+    </g>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#sky)"/>
+  <g fill="#FFFFFF">
+    <circle cx="90" cy="50" r="1.8" opacity="0.8"/>
+    <circle cx="250" cy="100" r="1.5" opacity="0.6"/>
+    <circle cx="420" cy="40" r="2" opacity="0.8"/>
+    <circle cx="560" cy="90" r="1.4" opacity="0.6"/>
+    <circle cx="1100" cy="50" r="2" opacity="0.8"/>
+    <circle cx="1160" cy="130" r="1.5" opacity="0.6"/>
+    <circle cx="660" cy="40" r="1.6" opacity="0.7"/>
+  </g>
+  <g fill="#FFF4C2">
+    <use href="#sp" transform="translate(330 70) scale(0.9)"/>
+    <use href="#sp" transform="translate(1060 110) scale(1.1)"/>
+  </g>
+
+  <!-- distant mountains -->
+  <path d="M0,330 L140,250 L240,300 L380,220 L520,310 L640,260 L760,320 L1200,320 V360 H0Z" fill="#8E6FD6" opacity="0.55"/>
+  <path d="M540,345 L600,320 L760,230 L860,290 L980,210 L1100,280 L1200,240 V360 H600Z" fill="#7A5FCB" opacity="0.6"/>
+
+  <!-- aura -->
+  <circle cx="880" cy="230" r="230" fill="url(#aura)"/>
+  <circle cx="880" cy="230" r="150" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.35"/>
+  <circle cx="880" cy="230" r="190" fill="none" stroke="#FFFFFF" stroke-width="1.5" opacity="0.2"/>
+
+  <!-- water -->
+  <rect x="0" y="340" width="1200" height="160" fill="url(#water)"/>
+  <!-- reflection of aura -->
+  <ellipse cx="880" cy="372" rx="200" ry="22" fill="#FFE4F0" opacity="0.25"/>
+  <g stroke="#FFFFFF" stroke-linecap="round" opacity="0.4">
+    <path d="M760,400 H1000" stroke-width="4"/>
+    <path d="M800,425 H960" stroke-width="3"/>
+    <path d="M830,448 H930" stroke-width="3"/>
+    <path d="M120,390 H220" stroke-width="3"/>
+    <path d="M300,430 H360" stroke-width="3"/>
+  </g>
+
+  <!-- rock -->
+  <path d="M770,360 C770,330 800,318 880,318 C960,318 990,330 990,360 C960,372 800,372 770,360Z" fill="url(#rock)"/>
+
+  <!-- meditating figure -->
+  <g transform="translate(880 322)">
+    <!-- legs -->
+    <path d="M-104,-4 C-106,-34 -60,-56 0,-52 C60,-56 106,-34 104,-4 C76,8 -76,8 -104,-4Z" fill="#271E6B"/>
+    <!-- torso + arms as one silhouette -->
+    <g fill="#3D3196">
+      <path d="M-48,-48 C-54,-96 -46,-124 0,-130 C46,-124 54,-96 48,-48Z"/>
+    </g>
+    <g fill="none" stroke="#3D3196" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-38,-116 C-56,-104 -60,-80 -58,-62 L-74,-24"/>
+      <path d="M38,-116 C56,-104 60,-80 58,-62 L74,-24"/>
+    </g>
+    <ellipse cx="-76" cy="-20" rx="12" ry="9" fill="#3D3196"/>
+    <ellipse cx="76" cy="-20" rx="12" ry="9" fill="#3D3196"/>
+    <!-- neck + head -->
+    <rect x="-10" y="-150" width="20" height="26" rx="6" fill="#3D3196"/>
+    <circle cx="0" cy="-168" r="26" fill="#3D3196"/>
+    <circle cx="0" cy="-197" r="12" fill="#3D3196"/>
+    <!-- rim light -->
+    <path d="M-20,-188 C-28,-180 -28,-160 -20,-150" fill="none" stroke="#FFE4F0" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  </g>
+
+  <!-- lotus on water -->
+  <use href="#lotus" transform="translate(1080 410) scale(1)"/>
+  <use href="#lotus" transform="translate(700 440) scale(0.75)"/>
+  <ellipse cx="1150" cy="455" rx="40" ry="8" fill="#1FA65A"/>
+  <ellipse cx="620" cy="395" rx="30" ry="6" fill="#1FA65A" opacity="0.9"/>
+
+  <!-- floating glow orbs -->
+  <g fill="#FFF4C2">
+    <circle cx="700" cy="170" r="4" opacity="0.8"/>
+    <circle cx="1050" cy="190" r="5" opacity="0.8"/>
+    <circle cx="760" cy="90" r="3" opacity="0.7"/>
+    <circle cx="1010" cy="300" r="3" opacity="0.7"/>
+  </g>
+  <g fill="#FFFFFF">
+    <use href="#sp" transform="translate(730 260) scale(1)"/>
+    <use href="#sp" transform="translate(1040 80) scale(0.8)"/>
+  </g>
+</svg>

@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.ui.components.iconAccent
+import com.example.ui.components.AppIcon
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -223,7 +225,7 @@ fun PlanScreen(
                             else "Scheduled habit"
                         },
                         iconName = habit.iconName,
-                        accent = c.categoryColors(habit.category),
+                        accent = c.iconAccent(AppIcon.of(habit.iconName)),
                         isCompleted = isCompleted,
                         onToggle = { onToggleHabit(habitWithStatus) },
                         onIncrement = {
@@ -508,13 +510,7 @@ private fun TimelineRow(
                 .fillMaxHeight()
                 .padding(horizontal = 8.dp)
         ) {
-            val iconVector = when (iconName) {
-                "sun" -> Icons.Default.WbSunny
-                "walk" -> Icons.Default.DirectionsWalk
-                "water" -> Icons.Default.WaterDrop
-                "moon" -> Icons.Default.NightsStay
-                else -> Icons.Default.SelfImprovement
-            }
+            val iconVector = AppIcon.of(iconName).vector
 
             IconBubble(background = bubbleColor, size = 40.dp) {
                 Icon(

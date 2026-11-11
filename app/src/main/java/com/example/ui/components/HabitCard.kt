@@ -57,16 +57,7 @@ import com.example.ui.theme.AppShapes
 import com.example.ui.theme.PlantTheme
 import com.example.ui.theme.categoryColors
 
-private fun habitIcon(iconName: String): ImageVector = when (iconName) {
-    "water" -> Icons.Default.WaterDrop
-    "walk" -> Icons.AutoMirrored.Filled.DirectionsWalk
-    "sun" -> Icons.Default.WbSunny
-    "moon" -> Icons.Default.NightsStay
-    "book" -> Icons.AutoMirrored.Filled.MenuBook
-    "sparkle" -> Icons.Default.AutoAwesome
-    "trophy" -> Icons.Default.EmojiEvents
-    else -> Icons.Default.SelfImprovement
-}
+private fun habitIcon(iconName: String): ImageVector = AppIcon.of(iconName).vector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +71,7 @@ fun HabitCard(
     val haptics = rememberHaptics()
 
     val habit = habitWithStatus.habit
-    val accent = c.categoryColors(habit.category)
+    val accent = c.iconAccent(AppIcon.of(habit.iconName))
     val currentProgress = habitWithStatus.currentProgress
     val target = habit.targetValue.coerceAtLeast(1)
     val progressRatio = (currentProgress.toFloat() / target).coerceIn(0f, 1f)

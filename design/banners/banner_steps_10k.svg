@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C9EEFF"/>
+      <stop offset="0.7" stop-color="#E9F9EC"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF4C2" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFF4C2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="g0" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9BE7B6"/>
+      <stop offset="1" stop-color="#6FD897"/>
+    </linearGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#2BC56B"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1FA65A"/>
+      <stop offset="1" stop-color="#13803F"/>
+    </linearGradient>
+    <linearGradient id="path" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF1C9"/>
+      <stop offset="1" stop-color="#F7E2AE"/>
+    </linearGradient>
+    <g id="foot" fill="#B9884A">
+      <path d="M0,20 C-7,20 -9,12 -8,4 C-7,-4 -10,-10 -8,-16 C-6,-22 7,-22 9,-14 C11,-6 7,2 7,10 C7,16 5,20 0,20Z"/>
+      <circle cx="-6" cy="-27" r="3.6"/>
+      <circle cx="0.5" cy="-29" r="3"/>
+      <circle cx="6" cy="-27.5" r="2.7"/>
+      <circle cx="10" cy="-23.5" r="2.3"/>
+      <circle cx="12.5" cy="-18.5" r="2"/>
+    </g>
+    <g id="tree">
+      <rect x="-6" y="-10" width="12" height="60" rx="4" fill="#7A4A1E"/>
+      <circle cx="0" cy="-40" r="48" fill="#1FA65A"/>
+      <circle cx="-22" cy="-20" r="32" fill="#1FA65A"/>
+      <circle cx="24" cy="-22" r="34" fill="#13803F"/>
+      <circle cx="-12" cy="-58" r="20" fill="#4ADE80" opacity="0.7"/>
+    </g>
+    <g id="pine">
+      <rect x="-5" y="0" width="10" height="26" fill="#7A4A1E"/>
+      <path d="M0,-90 L36,0 H-36Z" fill="#13803F"/>
+      <path d="M0,-90 L36,0 H0Z" fill="#0F6E35"/>
+    </g>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#sky)"/>
+  <circle cx="980" cy="100" r="160" fill="url(#sunGlow)"/>
+  <circle cx="980" cy="100" r="50" fill="#FACC32"/>
+  <circle cx="980" cy="100" r="38" fill="#FFE27A"/>
+  <g fill="#FFFFFF">
+    <g transform="translate(260 90)"><ellipse cx="0" cy="10" rx="80" ry="18"/><circle cx="-22" cy="0" r="24"/><circle cx="20" cy="-8" r="32"/></g>
+    <g transform="translate(720 60) scale(0.65)"><ellipse cx="0" cy="10" rx="80" ry="18"/><circle cx="-22" cy="0" r="24"/><circle cx="20" cy="-8" r="32"/></g>
+  </g>
+
+  <!-- far hills -->
+  <path d="M0,300 C150,250 300,260 420,280 C580,306 700,240 860,236 C1000,232 1100,260 1200,256 V500 H0Z" fill="url(#g0)"/>
+  <!-- distant tree row -->
+  <g opacity="0.85">
+    <use href="#pine" transform="translate(640 270) scale(0.55)"/>
+    <use href="#pine" transform="translate(680 262) scale(0.7)"/>
+    <use href="#pine" transform="translate(1140 254) scale(0.6)"/>
+  </g>
+  <path d="M0,350 C180,320 360,325 540,335 C740,346 880,300 1200,305 V500 H0Z" fill="url(#g1)"/>
+
+  <!-- winding path -->
+  <path d="M560,500 C640,450 780,430 820,400 C860,370 820,350 860,330 C890,316 940,312 960,306 L990,306 C970,314 930,324 910,340 C880,364 940,384 900,420 C860,456 820,470 800,500Z" fill="url(#path)"/>
+
+  <!-- trees -->
+  <use href="#tree" transform="translate(1090 300) scale(1.25)"/>
+  <use href="#tree" transform="translate(760 310) scale(0.9)"/>
+  <use href="#pine" transform="translate(1010 296) scale(0.8)"/>
+
+  <!-- bench -->
+  <g transform="translate(1000 390)">
+    <ellipse cx="0" cy="22" rx="70" ry="8" fill="#0B5A2C" opacity="0.3"/>
+    <rect x="-56" y="-34" width="112" height="10" rx="4" fill="#FF7F3F"/>
+    <rect x="-56" y="-18" width="112" height="10" rx="4" fill="#FF7F3F"/>
+    <rect x="-60" y="-2" width="120" height="12" rx="4" fill="#E86A2C"/>
+    <rect x="-50" y="8" width="8" height="18" fill="#0B1410" opacity="0.8"/>
+    <rect x="42" y="8" width="8" height="18" fill="#0B1410" opacity="0.8"/>
+    <rect x="-46" y="-26" width="6" height="26" fill="#0B1410" opacity="0.8"/>
+    <rect x="40" y="-26" width="6" height="26" fill="#0B1410" opacity="0.8"/>
+  </g>
+
+  <!-- footprints along path -->
+  <g opacity="0.85">
+    <use href="#foot" transform="translate(685 468) rotate(62) scale(1.25) scale(-1 1)"/>
+    <use href="#foot" transform="translate(765 455) rotate(58) scale(1.12) "/>
+    <use href="#foot" transform="translate(811 408) rotate(40) scale(1.0) scale(-1 1)"/>
+    <use href="#foot" transform="translate(860 386) rotate(15) scale(0.88) "/>
+    <use href="#foot" transform="translate(866 355) rotate(30) scale(0.76) scale(-1 1)"/>
+    <use href="#foot" transform="translate(903 345) rotate(55) scale(0.64) "/>
+    <use href="#foot" transform="translate(928 322) rotate(62) scale(0.54) scale(-1 1)"/>
+  </g>
+
+  <!-- foreground -->
+  <path d="M0,440 C200,425 380,428 480,445 C530,455 555,480 565,500 H0Z" fill="url(#g2)"/>
+  <path d="M860,500 C900,470 1000,445 1200,440 V500Z" fill="url(#g2)"/>
+  <!-- flowers / bushes -->
+  <g>
+    <circle cx="1150" cy="440" r="34" fill="#13803F"/>
+    <circle cx="1110" cy="450" r="26" fill="#1FA65A"/>
+    <circle cx="1120" cy="430" r="5" fill="#EF4F72"/>
+    <circle cx="1160" cy="420" r="5" fill="#FACC32"/>
+    <circle cx="1140" cy="452" r="5" fill="#FFFFFF"/>
+  </g>
+  <g fill="#FACC32">
+    <circle cx="700" cy="380" r="4"/>
+    <circle cx="940" cy="440" r="4"/>
+  </g>
+  <g fill="#EF4F72">
+    <circle cx="610" cy="395" r="4"/>
+    <circle cx="960" cy="460" r="4"/>
+  </g>
+  <!-- birds -->
+  <g fill="none" stroke="#13803F" stroke-width="3" stroke-linecap="round" opacity="0.6">
+    <path d="M820,150 q8,-8 16,0 q8,-8 16,0"/>
+    <path d="M860,125 q6,-6 12,0 q6,-6 12,0"/>
+  </g>
+  <g fill="#FFFFFF">
+    <use href="#sp" transform="translate(900 200) scale(1)"/>
+    <use href="#sp" transform="translate(1150 160) scale(0.8)"/>
+  </g>
+</svg>

@@ -33,15 +33,15 @@ data class AnalyticsData(
     val weeklyStats: List<WeeklyStat>,
     val categoryStats: Map<String, Int>, // Category -> completed count
     val timeOfDayStats: Map<String, Int>, // "Morning", "Afternoon", "Evening" -> count
-    val totalHabitsChecked: Int = 666,
-    val totalTimeInvestedMinutes: Int = 2262, // 37h 42m
-    val timeInvestedBreakdown: List<Pair<String, Int>> = listOf(
-        Pair("Practice Spanish", 1130), // 18h 50m
-        Pair("Morning meditation", 798), // 13h 18m
-        Pair("Stretch", 334) // 5h 34m
-    ),
-    val moodGoodPercentage: Int = 85,
-    val moodTotalDays: Int = 7
+    val totalHabitsChecked: Int = 0,
+    /** Minutes logged on minute-based habits over the last 12 weeks. */
+    val totalTimeInvestedMinutes: Int = 0,
+    val timeInvestedBreakdown: List<Pair<String, Int>> = emptyList(),
+    /** Share of mood check-ins in the last 7 days that were Good or Great (0 when none). */
+    val moodGoodPercentage: Int = 0,
+    val moodTotalDays: Int = 0,
+    /** Category -> completion % over the last 7 days. */
+    val categoryCompletion: List<Pair<String, Int>> = emptyList()
 )
 
 class HabitRepository(
@@ -73,7 +73,54 @@ class HabitRepository(
         }
     }
 
-    val challengesFlow: Flow<List<ChallengeEntity>> = habitDao.getAllChallengesFlow()
+    /**
+     * Challenges with live progress: "Day X of Y" comes from the join date and today's task
+     * count from the challenge's own habits and today's logs.
+     */
+    val challengesFlow: Flow<List<ChallengeEntity>> = combine(
+        habitDao.getAllChallengesFlow(),
+        habitDao.getAllHabitsFlow(),
+        habitDao.getLogsForDateFlow(dateFormat.format(Date()))
+    ) { challenges, habits, todayLogs ->
+        val completedToday = todayLogs.filter { it.isCompleted }.map { it.habitId }.toSet()
+        val habitsByChallenge = habits.filter { it.challengeId != null }.groupBy { it.challengeId }
+        challenges
+            .sortedWith(compareByDescending<ChallengeEntity> { it.isJoined }.thenBy { it.title })
+            .map { ch ->
+                var out = ch
+                if (ch.isJoined && ch.startedAt > 0) {
+                    out = out.copy(currentDay = dayNumber(ch.startedAt).coerceIn(1, ch.durationDays.coerceAtLeast(1)))
+                }
+                val linked = habitsByChallenge[ch.id].orEmpty()
+                if (ch.isJoined && linked.isNotEmpty()) {
+                    out = out.copy(totalTasks = linked.size, completedTasksToday = linked.count { it.id in completedToday })
+                }
+                out
+            }
+    }
+
+    /** 1 on the start day, 2 the next calendar day, and so on. */
+    private fun dayNumber(startedAt: Long): Int {
+        fun startOfDay(millis: Long) = Calendar.getInstance().apply {
+            timeInMillis = millis
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val days = (startOfDay(System.currentTimeMillis()) - startOfDay(startedAt)) / (24L * 60 * 60 * 1000)
+        return days.toInt() + 1
+    }
+
+    /**
+     * Clears everything the user logged — habits (and their reminders), check-ins, moods and
+     * challenge progress — so they can start fresh. Challenges themselves, banner photos and
+     * settings are kept.
+     */
+    suspend fun resetAllData() {
+        habitDao.getAllHabitsList().forEach { ReminderScheduler.cancelHabitReminder(context, it.id) }
+        habitDao.deleteAllLogs()
+        habitDao.deleteAllHabits()
+        habitDao.deleteAllMoodLogs()
+        habitDao.resetAllChallengeProgress()
+    }
 
     suspend fun logHabitProgress(habit: HabitEntity, dateString: String, delta: Int): HabitLogEntity {
         val existingLog = habitDao.getLogForHabitAndDate(habit.id, dateString)
@@ -161,7 +208,14 @@ class HabitRepository(
     }
 
     suspend fun acceptChallenge(challenge: ChallengeEntity) {
-        val updated = challenge.copy(isJoined = true)
+        // Joining starts the clock fresh: day 1 today, goal counter from zero.
+        val updated = challenge.copy(
+            isJoined = true,
+            startedAt = System.currentTimeMillis(),
+            currentDay = 1,
+            goalCurrent = 0f,
+            completedTasksToday = 0
+        )
         habitDao.updateChallenge(updated)
 
         // Parse challenge tasks and create actual habit entries
@@ -188,7 +242,7 @@ class HabitRepository(
 
     suspend fun leaveChallenge(challengeId: String) {
         val challenge = habitDao.getChallengeById(challengeId) ?: return
-        habitDao.updateChallenge(challenge.copy(isJoined = false))
+        habitDao.updateChallenge(challenge.copy(isJoined = false, startedAt = 0L, currentDay = 1, completedTasksToday = 0))
 
         // Cancel and remove linked habits
         val linkedHabits = habitDao.getHabitsForChallenge(challengeId)
@@ -232,6 +286,13 @@ class HabitRepository(
     suspend fun getDeepAnalytics(): AnalyticsData {
         val habits = habitDao.getAllHabitsList()
         val allLogs = habitDao.getAllLogs()
+        val moods = habitDao.getAllMoodLogs()
+
+        // Mood: share of Good/Great check-ins in the last 7 days
+        val weekAgo = dateFormat.format(Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -6) }.time)
+        val recentMoods = moods.filter { it.date >= weekAgo }
+        val moodGood = if (recentMoods.isEmpty()) 0
+            else recentMoods.count { it.moodScore >= 4 } * 100 / recentMoods.size
 
         if (habits.isEmpty()) {
             return AnalyticsData(
@@ -242,57 +303,56 @@ class HabitRepository(
                 longestStreakDays = 0,
                 weeklyStats = emptyList(),
                 categoryStats = emptyMap(),
-                timeOfDayStats = emptyMap()
+                timeOfDayStats = emptyMap(),
+                moodGoodPercentage = moodGood,
+                moodTotalDays = recentMoods.size
             )
         }
 
-        val completedLogs = allLogs.filter { it.isCompleted }
-        val overallRate = if (allLogs.isNotEmpty()) {
-            ((completedLogs.size.toFloat() / allLogs.size.coerceAtLeast(1)) * 100).toInt()
-        } else 65 // friendly baseline
+        val habitsById = habits.associateBy { it.id }
+        // Only count logs for habits that still exist
+        val liveLogs = allLogs.filter { it.habitId in habitsById }
+        val completedLogs = liveLogs.filter { it.isCompleted }
+        val overallRate = if (liveLogs.isNotEmpty()) completedLogs.size * 100 / liveLogs.size else 0
 
-        // Calculate Weekly stats for the last 7 days
+        // Weekly stats for the last 7 days
         val weeklyStats = mutableListOf<WeeklyStat>()
-        val cal = Calendar.getInstance()
         val dayFormat = SimpleDateFormat("EEE", Locale.getDefault())
-
         for (i in 6 downTo 0) {
-            val pastCal = (cal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -i) }
-            val dateStr = dateFormat.format(pastCal.time)
-            val dayName = dayFormat.format(pastCal.time)
-
-            val logsForDay = allLogs.filter { it.date == dateStr }
-            val completedCount = logsForDay.count { it.isCompleted }
-            val rate = if (habits.isNotEmpty()) {
-                (completedCount.toFloat() / habits.size).coerceIn(0f, 1f)
-            } else 0f
-
+            val day = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -i) }
+            val dateStr = dateFormat.format(day.time)
+            val completedCount = completedLogs.count { it.date == dateStr }
             weeklyStats.add(
                 WeeklyStat(
-                    dayLabel = dayName,
+                    dayLabel = dayFormat.format(day.time),
                     dateString = dateStr,
-                    completionRate = rate,
+                    completionRate = (completedCount.toFloat() / habits.size).coerceIn(0f, 1f),
                     completedCount = completedCount,
                     totalCount = habits.size
                 )
             )
         }
 
-        // Calculate streak
-        var streakDays = 0
-        var checkCal = Calendar.getInstance()
-        // Check today or yesterday
-        for (dayBack in 0..60) {
-            val dStr = dateFormat.format(checkCal.time)
-            val dayLogs = allLogs.filter { it.date == dStr && it.isCompleted }
-            if (dayLogs.isNotEmpty()) {
-                streakDays++
-            } else if (dayBack > 0) {
-                break
-            }
-            checkCal.add(Calendar.DAY_OF_YEAR, -1)
+        // Streaks: consecutive days with at least one completed habit
+        val completedDates = completedLogs.map { it.date }.toSet()
+        var activeStreak = 0
+        val cursor = Calendar.getInstance()
+        // Today doesn't break the streak until it's over
+        if (dateFormat.format(cursor.time) !in completedDates) cursor.add(Calendar.DAY_OF_YEAR, -1)
+        while (dateFormat.format(cursor.time) in completedDates) {
+            activeStreak++
+            cursor.add(Calendar.DAY_OF_YEAR, -1)
         }
-        val activeStreak = streakDays.coerceAtLeast(1)
+        var longest = 0
+        var run = 0
+        var prev: Calendar? = null
+        for (d in completedDates.sorted()) {
+            val cal = Calendar.getInstance().apply { time = dateFormat.parse(d) ?: return@apply }
+            run = if (prev != null && (prev.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
+                    .let { dateFormat.format(it.time) == d }) run + 1 else 1
+            longest = maxOf(longest, run)
+            prev = cal
+        }
 
         val plantStage = when {
             activeStreak >= 30 -> "Golden Tree"
@@ -302,11 +362,9 @@ class HabitRepository(
             else -> "Seedling"
         }
 
-        // Category breakdown
-        val habitsById = habits.associateBy { it.id }
+        // Category / time-of-day counts
         val categoryStats = mutableMapOf<String, Int>()
         val timeStats = mutableMapOf<String, Int>()
-
         for (log in completedLogs) {
             val habit = habitsById[log.habitId] ?: continue
             categoryStats[habit.category] = (categoryStats[habit.category] ?: 0) + 1
@@ -319,15 +377,40 @@ class HabitRepository(
             timeStats[tod] = (timeStats[tod] ?: 0) + 1
         }
 
+        // Category completion % over the last 7 days
+        val weekDates = weeklyStats.map { it.dateString }.toSet()
+        val categoryCompletion = habits.groupBy { it.category.ifBlank { "Other" } }.map { (category, list) ->
+            val ids = list.map { it.id }.toSet()
+            val done = completedLogs.count { it.habitId in ids && it.date in weekDates }
+            category to (done * 100 / (list.size * 7)).coerceIn(0, 100)
+        }.sortedByDescending { it.second }
+
+        // Time invested: minutes logged on minute-based habits over the last 12 weeks
+        val twelveWeeksAgo = dateFormat.format(Calendar.getInstance().apply { add(Calendar.WEEK_OF_YEAR, -12) }.time)
+        val minuteHabits = habits.filter { it.unit.equals("mins", true) || it.unit.equals("minutes", true) }
+            .associateBy { it.id }
+        val minutesByHabit = liveLogs
+            .filter { it.habitId in minuteHabits && it.date >= twelveWeeksAgo }
+            .groupBy { it.habitId }
+            .map { (id, logs) -> minuteHabits.getValue(id).title to logs.sumOf { it.progressValue } }
+            .filter { it.second > 0 }
+            .sortedByDescending { it.second }
+
         return AnalyticsData(
             totalHabits = habits.size,
             overallCompletionRate = overallRate,
             currentPlantStage = plantStage,
             activeStreakDays = activeStreak,
-            longestStreakDays = (activeStreak + 4).coerceAtLeast(7),
+            longestStreakDays = maxOf(longest, activeStreak),
             weeklyStats = weeklyStats,
             categoryStats = categoryStats,
-            timeOfDayStats = timeStats
+            timeOfDayStats = timeStats,
+            totalHabitsChecked = completedLogs.size,
+            totalTimeInvestedMinutes = minutesByHabit.sumOf { it.second },
+            timeInvestedBreakdown = minutesByHabit.take(5),
+            moodGoodPercentage = moodGood,
+            moodTotalDays = recentMoods.size,
+            categoryCompletion = categoryCompletion
         )
     }
 }

@@ -1,5 +1,25 @@
 package com.example.ui.screens
 
+import kotlinx.coroutines.delay
+import kotlin.math.absoluteValue
+import com.example.ui.theme.heroGradient
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.School
+import com.example.ui.components.AppIcon
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -114,15 +134,16 @@ fun ChallengesScreen(
         activeCategory == ALL_CATEGORIES || ch.category.trim().equals(activeCategory, ignoreCase = true)
 
     val joinedChallenges = challenges.filter { it.isJoined && matches(it) }
-    val availableChallenges = challenges.filter { !it.isJoined && matches(it) }
-    val gratitudeChallenge = challenges.find { it.id == "gratitude_month" }
-    val runGoal = challenges.find { it.id == "goal_counter_run" }?.takeIf { !it.isJoined && matches(it) }
-    val relationshipChallenge = challenges.find { it.id == "relationship_week" }?.takeIf { !it.isJoined && matches(it) }
-    val remainingChallenges = availableChallenges.filter {
-        it.id != "gratitude_month" && it.id != "goal_counter_run" && it.id != "relationship_week"
+    val discoverChallenges = challenges.filter { !it.isJoined && matches(it) }
+    // Carousel: a few hand-picked built-ins, then anything else not joined yet
+    val featured = remember(challenges) {
+        val picks = listOf("gratitude_month", "meditation_21", "digital_detox", "read_daily", "hydration_hero")
+        (picks.mapNotNull { id -> challenges.find { it.id == id } } + challenges.filter { !it.isJoined })
+            .distinctBy { it.id }
+            .take(5)
     }
-    val nothingMatches = joinedChallenges.isEmpty() && runGoal == null &&
-        relationshipChallenge == null && remainingChallenges.isEmpty()
+    val nothingMatches = joinedChallenges.isEmpty() && discoverChallenges.isEmpty()
+    val columns = if (LocalConfiguration.current.screenWidthDp >= 600) 2 else 1
 
     LazyColumn(
         modifier = modifier
@@ -202,14 +223,14 @@ fun ChallengesScreen(
             }
         }
 
-        // Hero monthly banner (Gratitude Month)
-        if (gratitudeChallenge != null) {
-            item(key = "hero_${gratitudeChallenge.id}") {
-                FeaturedHeroCard(
-                    challenge = gratitudeChallenge,
-                    onClick = { onChallengeClick(gratitudeChallenge) },
+        // Featured carousel (auto-advances, swipeable)
+        if (featured.isNotEmpty()) {
+            item(key = "featured_carousel") {
+                FeaturedCarousel(
+                    challenges = featured,
+                    onClick = onChallengeClick,
                     modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .padding(vertical = 8.dp)
                         .staggeredEntrance(0)
                 )
             }
@@ -269,13 +290,18 @@ fun ChallengesScreen(
             }
         }
 
-        // Section: community challenges
-        item(key = "community_header") {
+        // Section: discover (grid of banner tiles)
+        item(key = "discover_header") {
             SectionHeader(
-                title = "Community challenges",
+                title = "Discover challenges",
                 modifier = Modifier
                     .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 6.dp)
-                    .animateItem()
+                    .animateItem(),
+                action = {
+                    if (discoverChallenges.isNotEmpty()) {
+                        CountBadge(discoverChallenges.size, AccentPair(c.sunrise, c.sunriseSoft))
+                    }
+                }
             )
         }
 
@@ -290,96 +316,27 @@ fun ChallengesScreen(
             }
         }
 
-        // Milestone goal-counter challenge card
-        if (runGoal != null) {
-            item(key = "goal_${runGoal.id}") {
-                PlantCard(
-                    modifier = Modifier
-                        .animateItem()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .staggeredEntrance(1)
-                        .fillMaxWidth()
-                        .testTag("challenge_goal_counter_card"),
-                    onClick = { onChallengeClick(runGoal) },
-                    brush = c.dreamGradient,
-                    borderColor = Color.Transparent,
-                    contentPadding = 18.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(AppShapes.pill)
-                                    .background(c.onAccent.copy(alpha = 0.18f))
-                                    .padding(horizontal = 10.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = "MILESTONE GOAL COUNTER",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = c.onAccent
-                                )
-                            }
-                            Text(
-                                text = runGoal.title,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = c.onAccent
-                            )
-                            Text(
-                                text = "Count progress (+1, +5, +10) and stay on track with weekly pacing",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = c.onAccent.copy(alpha = 0.85f)
-                            )
-                        }
-
-                        Spacer(Modifier.width(12.dp))
-
-                        IconBubble(background = c.onAccent.copy(alpha = 0.2f), size = 52.dp) {
-                            Icon(
-                                imageVector = Icons.Default.DirectionsRun,
-                                contentDescription = null,
-                                tint = c.onAccent,
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Relationship Week photo card
-        if (relationshipChallenge != null) {
-            item(key = "photo_${relationshipChallenge.id}") {
-                PhotoChallengeCard(
-                    challenge = relationshipChallenge,
-                    onClick = { onChallengeClick(relationshipChallenge) },
-                    modifier = Modifier
-                        .animateItem()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .staggeredEntrance(2)
-                        .testTag("recommended_challenge_card")
-                )
-            }
-        }
-
-        // Remaining unjoined challenges
-        items(remainingChallenges, key = { "available_${it.id}" }) { challenge ->
-            val index = remainingChallenges.indexOf(challenge)
-            DiscoverChallengeCard(
-                challenge = challenge,
-                onClick = { onChallengeClick(challenge) },
+        val rows = discoverChallenges.chunked(columns)
+        itemsIndexed(rows, key = { _, row -> "discover_" + row.joinToString("_") { it.id } }) { rowIndex, row ->
+            Row(
                 modifier = Modifier
                     .animateItem()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .staggeredEntrance(index + 3)
-                    .testTag("challenge_card_${challenge.id}")
-            )
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                row.forEachIndexed { i, challenge ->
+                    ChallengeTile(
+                        challenge = challenge,
+                        onClick = { onChallengeClick(challenge) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .staggeredEntrance(rowIndex * columns + i + 2)
+                            .testTag("challenge_card_${challenge.id}")
+                    )
+                }
+                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+            }
         }
 
         // Create custom challenge via JSON
@@ -458,9 +415,16 @@ internal fun challengeCategoryIcon(category: String): ImageVector = when (catego
     "people", "social", "relationships", "love" -> Icons.Default.Groups
     "finance", "money", "savings" -> Icons.Default.Savings
     "routine", "morning" -> Icons.Default.WbSunny
-    "productivity", "work", "learning", "study" -> Icons.Default.Bolt
+    "productivity", "work" -> Icons.Default.Bolt
+    "learning", "study", "education" -> Icons.Default.School
+    "home", "declutter" -> Icons.Default.Inventory2
+    "nutrition", "food", "diet" -> Icons.Default.Restaurant
     else -> Icons.Default.Spa
 }
+
+/** A challenge's own icon (ChallengeEntity.icon) when set, otherwise its category icon. */
+internal fun challengeIcon(challenge: ChallengeEntity): ImageVector =
+    if (challenge.icon.isNotBlank()) AppIcon.of(challenge.icon).vector else challengeCategoryIcon(challenge.category)
 
 @Composable
 private fun HeaderPill(
@@ -601,41 +565,124 @@ private fun AnimatedProgressBar(
 }
 
 @Composable
+private fun FeaturedCarousel(
+    challenges: List<ChallengeEntity>,
+    onClick: (ChallengeEntity) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = PlantTheme.colors
+    val pagerState = rememberPagerState { challenges.size }
+    val dragged by pagerState.interactionSource.collectIsDraggedAsState()
+    // Auto-advance every 5 s; pauses while the user is swiping.
+    LaunchedEffect(dragged, challenges.size) {
+        if (dragged || challenges.size < 2) return@LaunchedEffect
+        while (true) {
+            delay(5000)
+            pagerState.animateScrollToPage(
+                (pagerState.currentPage + 1) % challenges.size,
+                animationSpec = tween(700, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+    Column(modifier = modifier.fillMaxWidth()) {
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            pageSpacing = 12.dp,
+            key = { challenges[it].id }
+        ) { page ->
+            val challenge = challenges[page]
+            val offset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue.coerceIn(0f, 1f)
+            FeaturedHeroCard(
+                challenge = challenge,
+                onClick = { onClick(challenge) },
+                modifier = Modifier.graphicsLayer {
+                    val scale = 1f - 0.07f * offset
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = 1f - 0.35f * offset
+                }
+            )
+        }
+        if (challenges.size > 1) {
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                repeat(challenges.size) { i ->
+                    val selected = pagerState.currentPage == i
+                    val width by animateDpAsState(if (selected) 22.dp else 8.dp, label = "dotWidth")
+                    val color by animateColorAsState(if (selected) c.primary else c.border, label = "dotColor")
+                    Box(
+                        modifier = Modifier
+                            .height(8.dp)
+                            .width(width)
+                            .clip(AppShapes.pill)
+                            .background(color)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Category gradient used when a challenge has no banner image. */
+@Composable
+private fun categoryBrush(category: String): Brush {
+    val c = PlantTheme.colors
+    return when (category.trim().lowercase()) {
+        "fitness", "exercise", "sport", "movement", "routine" -> c.sunriseGradient
+        "mindfulness", "mind", "meditation", "mental" -> c.dreamGradient
+        else -> c.heroGradient
+    }
+}
+
+@Composable
 private fun FeaturedHeroCard(
     challenge: ChallengeEntity,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = PlantTheme.colors
+    val banner = rememberBannerSource(challenge)
+    // Slow "Ken Burns" drift so the artwork feels alive
+    val drift = rememberInfiniteTransition(label = "kenBurns")
+    val zoom by drift.animateFloat(
+        initialValue = 1f, targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(tween(9000, easing = LinearEasing), RepeatMode.Reverse),
+        label = "kenBurnsZoom"
+    )
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(196.dp)
+            .height(210.dp)
             .bounceClick(pressedScale = 0.98f, onClick = onClick)
             .clip(AppShapes.xl)
-            .testTag("banner_gratitude_month")
+            .testTag("featured_${challenge.id}")
     ) {
-        ChallengeBannerImage(
-            source = rememberBannerSource(challenge) ?: BannerSource.Bundled(R.drawable.challenge_gratitude),
-            contentDescription = "${challenge.title} banner",
-            modifier = Modifier.fillMaxSize()
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { scaleX = zoom; scaleY = zoom }
+        ) {
+            if (banner != null) {
+                ChallengeBannerImage(source = banner, contentDescription = "${challenge.title} banner", modifier = Modifier.fillMaxSize())
+            } else {
+                Box(Modifier.fillMaxSize().background(categoryBrush(challenge.category)))
+            }
+        }
         // Photo scrim: keeps white text legible on any image.
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        listOf(
-                            Color.Black.copy(alpha = 0.05f),
-                            Color.Black.copy(alpha = 0.35f),
-                            Color.Black.copy(alpha = 0.8f)
-                        )
+                        listOf(Color.Black.copy(alpha = 0.05f), Color.Black.copy(alpha = 0.3f), Color.Black.copy(alpha = 0.8f))
                     )
                 )
         )
 
-        // Featured badge
         Row(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -647,7 +694,7 @@ private fun FeaturedHeroCard(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
-            Text(text = "FEATURED CHALLENGE", style = MaterialTheme.typography.labelSmall, color = Color.White)
+            Text(text = "FEATURED", style = MaterialTheme.typography.labelSmall, color = Color.White)
         }
 
         if (challenge.isJoined) {
@@ -661,11 +708,7 @@ private fun FeaturedHeroCard(
                     .align(Alignment.TopEnd)
                     .padding(14.dp)
             ) {
-                Text(
-                    text = "D${challenge.currentDay}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White
-                )
+                Text(text = "D${challenge.currentDay}", style = MaterialTheme.typography.labelSmall, color = Color.White)
             }
         }
 
@@ -678,17 +721,22 @@ private fun FeaturedHeroCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(challengeIcon(challenge), contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                    Text(
+                        text = challenge.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Text(
-                    text = challenge.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "${challenge.durationDays} days · Tap to review habits & reminders",
+                    text = "${challenge.durationDays} days · ${challenge.subtitle}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.85f)
+                    color = Color.White.copy(alpha = 0.88f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -696,11 +744,9 @@ private fun FeaturedHeroCard(
 
             Box(
                 modifier = Modifier
-                    .bounceClick(onClick = onClick)
                     .clip(AppShapes.pill)
                     .background(c.leafGradient)
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .testTag("btn_inspect_gratitude"),
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -710,6 +756,127 @@ private fun FeaturedHeroCard(
                 )
             }
         }
+    }
+}
+
+/** Banner tile used in the Discover grid. */
+@Composable
+private fun ChallengeTile(
+    challenge: ChallengeEntity,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = PlantTheme.colors
+    val accent = c.categoryColors(challenge.category)
+    val banner = rememberBannerSource(challenge)
+    // Each tile's icon floats on its own rhythm
+    val float = rememberInfiniteTransition(label = "tileFloat")
+    val dy by float.animateFloat(
+        initialValue = -3f, targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            tween(1700 + (challenge.id.hashCode().absoluteValue % 700), easing = FastOutSlowInEasing),
+            RepeatMode.Reverse
+        ),
+        label = "tileFloatY"
+    )
+    Column(
+        modifier = modifier
+            .bounceClick(pressedScale = 0.97f, onClick = onClick)
+            .clip(AppShapes.large)
+            .background(c.card)
+            .border(1.dp, c.border, AppShapes.large)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+        ) {
+            if (banner != null) {
+                ChallengeBannerImage(source = banner, contentDescription = null, modifier = Modifier.fillMaxSize())
+            } else {
+                Box(Modifier.fillMaxSize().background(categoryBrush(challenge.category)))
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))))
+            )
+            // Duration + goal chips
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (challenge.goalTarget > 0f) TileChip("🎯 Goal")
+                TileChip("${challenge.durationDays} days")
+            }
+            // Floating icon
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+                    .graphicsLayer { translationY = dy.dp.toPx() }
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(c.surface)
+                    .border(2.dp, accent.color.copy(alpha = 0.5f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(challengeIcon(challenge), contentDescription = null, tint = accent.color, modifier = Modifier.size(24.dp))
+            }
+        }
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = challenge.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = c.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = challenge.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = c.textSecondary,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .clip(AppShapes.pill)
+                        .background(accent.soft)
+                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                ) {
+                    Text(text = challenge.category, style = MaterialTheme.typography.labelSmall, color = accent.color)
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "${challenge.totalTasks} daily tasks",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = c.textMuted,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(text = "Inspect →", style = MaterialTheme.typography.labelMedium, color = c.primary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TileChip(text: String) {
+    Box(
+        modifier = Modifier
+            .clip(AppShapes.pill)
+            .background(Color.Black.copy(alpha = 0.42f))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelSmall, color = Color.White)
     }
 }
 
@@ -731,8 +898,7 @@ private fun ActiveChallengeCard(
         onClick = onClick,
         contentPadding = 16.dp
     ) {
-        // Only photos the user attached; built-in stock photos stay on the featured cards.
-        (rememberBannerSource(challenge) as? BannerSource.Photo)?.let { banner ->
+        rememberBannerSource(challenge)?.let { banner ->
             ChallengeBannerImage(
                 source = banner,
                 contentDescription = "${challenge.title} banner",
@@ -755,7 +921,7 @@ private fun ActiveChallengeCard(
                 colors = listOf(accent.color, c.primary)
             ) {
                 Icon(
-                    imageVector = challengeCategoryIcon(challenge.category),
+                    imageVector = challengeIcon(challenge),
                     contentDescription = null,
                     tint = accent.color,
                     modifier = Modifier.size(20.dp)
@@ -854,157 +1020,4 @@ private fun ActiveChallengeCard(
     }
 }
 
-@Composable
-private fun PhotoChallengeCard(
-    challenge: ChallengeEntity,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val c = PlantTheme.colors
-    val accent = c.categoryColors("relationships")
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(184.dp)
-            .bounceClick(pressedScale = 0.98f, onClick = onClick)
-            .clip(AppShapes.large)
-    ) {
-        ChallengeBannerImage(
-            source = rememberBannerSource(challenge) ?: BannerSource.Bundled(R.drawable.challenge_gratitude),
-            contentDescription = challenge.title,
-            modifier = Modifier.fillMaxSize()
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Black.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.82f))
-                    )
-                )
-        )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier
-                        .clip(AppShapes.pill)
-                        .background(accent.soft)
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(Icons.Default.Favorite, contentDescription = null, tint = accent.color, modifier = Modifier.size(12.dp))
-                    Text(text = "Relationships", style = MaterialTheme.typography.labelSmall, color = accent.color)
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(AppShapes.pill)
-                        .background(c.leafGradient)
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(text = "View Challenge", style = MaterialTheme.typography.labelMedium, color = c.onPrimary)
-                }
-            }
-
-            Column {
-                Text(
-                    text = challenge.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White
-                )
-                Text(
-                    text = "${challenge.durationDays} days • Daily connection prompts and reminders",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiscoverChallengeCard(
-    challenge: ChallengeEntity,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val c = PlantTheme.colors
-    val accent = c.categoryColors(challenge.category)
-    PlantCard(
-        modifier = modifier.fillMaxWidth(),
-        onClick = onClick,
-        contentPadding = 16.dp
-    ) {
-        // Only photos the user attached; built-in stock photos stay on the featured cards.
-        (rememberBannerSource(challenge) as? BannerSource.Photo)?.let { banner ->
-            ChallengeBannerImage(
-                source = banner,
-                contentDescription = "${challenge.title} banner",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(AppShapes.medium)
-            )
-            Spacer(Modifier.height(14.dp))
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            IconBubble(background = accent.soft, size = 50.dp) {
-                Icon(
-                    imageVector = challengeCategoryIcon(challenge.category),
-                    contentDescription = null,
-                    tint = accent.color,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = challenge.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = c.textPrimary
-                )
-                Text(
-                    text = challenge.subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = c.textSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "${challenge.durationDays} days · ${challenge.totalTasks} scheduled habits",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = accent.color,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(AppShapes.pill)
-                    .background(c.primarySoft)
-                    .border(1.dp, c.primary.copy(alpha = 0.25f), AppShapes.pill)
-                    .padding(horizontal = 12.dp, vertical = 7.dp)
-            ) {
-                Text(text = "Inspect →", style = MaterialTheme.typography.labelMedium, color = c.primary)
-            }
-        }
-    }
-}

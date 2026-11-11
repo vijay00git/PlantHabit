@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF6DD"/>
+      <stop offset="0.6" stop-color="#FFE6A6"/>
+      <stop offset="1" stop-color="#F9CF6A"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1FA65A"/>
+      <stop offset="1" stop-color="#13803F"/>
+    </linearGradient>
+    <linearGradient id="pageL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EDE6D2"/>
+    </linearGradient>
+    <linearGradient id="pageR" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#EDE6D2"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#1FA65A"/>
+    </linearGradient>
+    <path id="leaf" d="M0,0 C10,-20 34,-26 52,-22 C44,-6 22,6 0,0Z"/>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#bg)"/>
+  <g fill="#FFFFFF" opacity="0.45">
+    <circle cx="140" cy="110" r="60"/>
+    <circle cx="380" cy="60" r="22"/>
+    <circle cx="560" cy="200" r="14"/>
+  </g>
+
+  <!-- warm glow -->
+  <circle cx="830" cy="230" r="260" fill="url(#halo)"/>
+  <!-- desk -->
+  <path d="M0,410 H1200 V500 H0Z" fill="url(#desk)"/>
+  <rect x="0" y="404" width="1200" height="10" fill="#4ADE80"/>
+
+  <!-- book stack right -->
+  <g transform="translate(1118 408)">
+    <rect x="-78" y="-34" width="156" height="34" rx="6" fill="#7C6CF0"/>
+    <rect x="-70" y="-28" width="8" height="22" rx="3" fill="#A597FF"/>
+    <rect x="-68" y="-66" width="140" height="32" rx="6" fill="#EF4F72"/>
+    <rect x="52" y="-60" width="8" height="20" rx="3" fill="#FF9AAE"/>
+    <rect x="-74" y="-96" width="148" height="30" rx="6" fill="#2AA7E8"/>
+    <rect x="-66" y="-90" width="8" height="18" rx="3" fill="#5CC6F7"/>
+    <!-- mug on stack -->
+    <path d="M-20,-150 H24 V-104 C24,-99 20,-96 15,-96 H-11 C-16,-96 -20,-99 -20,-104Z" fill="#F4FAF2"/>
+    <path d="M24,-140 C40,-140 40,-112 24,-112" fill="none" stroke="#F4FAF2" stroke-width="6"/>
+    <path d="M-4,-160 C-10,-170 2,-178 -4,-190 M10,-160 C4,-170 16,-178 10,-190" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  </g>
+
+  <!-- open book -->
+  <g transform="translate(820 400)">
+    <ellipse cx="0" cy="10" rx="230" ry="18" fill="#0B5A2C" opacity="0.35"/>
+    <!-- cover -->
+    <path d="M0,0 C-70,-28 -150,-30 -224,-14 L-224,4 C-150,-12 -70,-10 0,16 C70,-10 150,-12 224,4 L224,-14 C150,-30 70,-28 0,0Z" fill="#13803F"/>
+    <!-- page stacks -->
+    <path d="M0,-6 C-70,-36 -140,-38 -212,-22 L-212,-150 C-140,-166 -70,-162 0,-130Z" fill="#E4DCC4"/>
+    <path d="M0,-6 C70,-36 140,-38 212,-22 L212,-150 C140,-166 70,-162 0,-130Z" fill="#E4DCC4"/>
+    <path d="M0,-12 C-70,-42 -140,-44 -204,-30 L-204,-160 C-140,-174 -70,-168 0,-138Z" fill="url(#pageL)"/>
+    <path d="M0,-12 C70,-42 140,-44 204,-30 L204,-160 C140,-174 70,-168 0,-138Z" fill="url(#pageR)"/>
+    <!-- fanning page -->
+    <path d="M0,-138 C40,-190 100,-210 160,-206 L150,-80 C100,-90 40,-70 0,-12Z" fill="#FFFFFF" opacity="0.95"/>
+    <path d="M0,-138 C40,-190 100,-210 160,-206 L150,-80 C100,-90 40,-70 0,-12Z" fill="none" stroke="#EDE6D2" stroke-width="2"/>
+    <!-- abstract text lines -->
+    <g stroke="#C9BFA4" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.8">
+      <path d="M-180,-136 C-130,-146 -80,-142 -30,-124"/>
+      <path d="M-180,-114 C-130,-124 -80,-120 -30,-102"/>
+      <path d="M-180,-92 C-130,-102 -80,-98 -60,-90"/>
+      <path d="M-180,-70 C-130,-80 -80,-76 -30,-58"/>
+      <path d="M180,-136 C130,-146 120,-145 110,-144"/>
+      <path d="M180,-60 C150,-66 140,-64 120,-62"/>
+    </g>
+    <!-- plants sprouting -->
+    <path d="M0,-120 C-6,-170 6,-210 -4,-260" fill="none" stroke="#13803F" stroke-width="7" stroke-linecap="round"/>
+    <path d="M-2,-150 C-30,-170 -50,-200 -46,-230" fill="none" stroke="#13803F" stroke-width="5" stroke-linecap="round"/>
+    <path d="M2,-180 C30,-200 50,-220 60,-250" fill="none" stroke="#13803F" stroke-width="5" stroke-linecap="round"/>
+    <g fill="url(#g1)">
+      <use href="#leaf" transform="translate(-4 -258) rotate(-90) scale(1.1)"/>
+      <use href="#leaf" transform="translate(-46 -228) rotate(-140)"/>
+      <use href="#leaf" transform="translate(60 -248) rotate(-50)"/>
+      <use href="#leaf" transform="translate(-2 -200) rotate(-170) scale(0.9)"/>
+      <use href="#leaf" transform="translate(2 -150) rotate(-20) scale(0.9)"/>
+    </g>
+    <g fill="#13803F">
+      <use href="#leaf" transform="translate(-28 -176) rotate(200) scale(0.7)"/>
+      <use href="#leaf" transform="translate(30 -204) rotate(-10) scale(0.7)"/>
+    </g>
+    <circle cx="-46" cy="-232" r="9" fill="#EF4F72"/>
+    <circle cx="-46" cy="-232" r="4" fill="#FACC32"/>
+  </g>
+
+  <!-- sparkles -->
+  <g fill="#F2A80F">
+    <use href="#sp" transform="translate(680 220) scale(1.3)"/>
+    <use href="#sp" transform="translate(1000 180) scale(1)"/>
+    <use href="#sp" transform="translate(1160 80) scale(0.9)"/>
+  </g>
+  <g fill="#FFFFFF">
+    <use href="#sp" transform="translate(740 120) scale(0.9)"/>
+    <use href="#sp" transform="translate(1040 260) scale(0.8)"/>
+  </g>
+  <g fill="#F2A80F" opacity="0.6">
+    <circle cx="640" cy="320" r="4"/>
+    <circle cx="1060" cy="140" r="3"/>
+  </g>
+</svg>

@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFC9B5"/>
+      <stop offset="0.6" stop-color="#F9A3AE"/>
+      <stop offset="1" stop-color="#EF7F95"/>
+    </linearGradient>
+    <radialGradient id="warm" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFE3B0" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#FFE3B0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="win" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7C6CF0"/>
+      <stop offset="0.55" stop-color="#EF4F72"/>
+      <stop offset="1" stop-color="#FF9F5A"/>
+    </linearGradient>
+    <linearGradient id="table" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C9465F"/>
+      <stop offset="1" stop-color="#8E2C45"/>
+    </linearGradient>
+    <linearGradient id="mugA" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FF6B8B"/>
+      <stop offset="1" stop-color="#E03E63"/>
+    </linearGradient>
+    <linearGradient id="mugB" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFA066"/>
+      <stop offset="1" stop-color="#F27A36"/>
+    </linearGradient>
+    <linearGradient id="pot" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F4FAF2"/>
+      <stop offset="1" stop-color="#DCE8DA"/>
+    </linearGradient>
+    <path id="heart" d="M0,4 C-2,-4 -14,-4 -14,4 C-14,12 -4,16 0,22 C4,16 14,12 14,4 C14,-4 2,-4 0,4Z"/>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#wall)"/>
+
+  <!-- arched window -->
+  <g transform="translate(900 0)">
+    <path d="M-190,330 V150 A190,140 0 0 1 190,150 V330Z" fill="#FFE7DC" opacity="0.6"/>
+    <path d="M-170,330 V160 A170,125 0 0 1 170,160 V330Z" fill="url(#win)"/>
+    <circle cx="70" cy="260" r="50" fill="#FACC32" opacity="0.9"/>
+    <path d="M-170,300 C-90,270 -20,285 40,280 C100,275 140,265 170,270 V330 H-170Z" fill="#B23A5C" opacity="0.8"/>
+    <g fill="#FFFFFF">
+      <circle cx="-110" cy="110" r="2"/>
+      <circle cx="-40" cy="80" r="1.6"/>
+      <circle cx="60" cy="100" r="2"/>
+      <circle cx="120" cy="140" r="1.5"/>
+    </g>
+    <path d="M0,36 V330 M-170,200 H170" stroke="#FFE7DC" stroke-width="8"/>
+  </g>
+
+  <!-- string lights -->
+  <path d="M0,40 C200,90 400,90 600,50 C800,10 1000,40 1200,20" fill="none" stroke="#8E2C45" stroke-width="2" opacity="0.5"/>
+  <g>
+    <circle cx="80" cy="60" r="7" fill="#FACC32"/>
+    <circle cx="200" cy="78" r="7" fill="#FFF4C2"/>
+    <circle cx="320" cy="82" r="7" fill="#FACC32"/>
+    <circle cx="440" cy="75" r="7" fill="#FFF4C2"/>
+    <circle cx="560" cy="58" r="7" fill="#FACC32"/>
+    <circle cx="680" cy="38" r="7" fill="#FFF4C2"/>
+  </g>
+  <g fill="url(#warm)">
+    <circle cx="80" cy="60" r="26"/>
+    <circle cx="200" cy="78" r="26"/>
+    <circle cx="320" cy="82" r="26"/>
+    <circle cx="440" cy="75" r="26"/>
+    <circle cx="560" cy="58" r="26"/>
+    <circle cx="680" cy="38" r="26"/>
+  </g>
+
+  <!-- warm light pool -->
+  <ellipse cx="870" cy="340" rx="330" ry="150" fill="url(#warm)" opacity="0.6"/>
+
+  <!-- table -->
+  <path d="M0,390 H1200 V500 H0Z" fill="url(#table)"/>
+  <rect x="0" y="385" width="1200" height="12" fill="#E35A75"/>
+
+  <!-- floating hearts from steam -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.75">
+    <path d="M790,255 C770,230 810,215 790,190"/>
+    <path d="M975,255 C995,230 955,215 975,190"/>
+  </g>
+  <g fill="#FFFFFF">
+    <use href="#heart" transform="translate(870 130) scale(3.2)"/>
+  </g>
+  <g fill="#EF4F72">
+    <use href="#heart" transform="translate(870 136) scale(2.3)"/>
+    <use href="#heart" transform="translate(760 120) scale(1.2)"/>
+    <use href="#heart" transform="translate(1000 105) scale(1.4)"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.85">
+    <use href="#heart" transform="translate(705 175) scale(0.9)"/>
+    <use href="#heart" transform="translate(1040 180) scale(0.8)"/>
+  </g>
+
+  <!-- mug A (berry) -->
+  <g transform="translate(790 395)">
+    <ellipse cx="0" cy="2" rx="80" ry="10" fill="#6E1F35" opacity="0.35"/>
+    <path d="M58,-100 C110,-100 110,-30 58,-30" fill="none" stroke="#E03E63" stroke-width="16"/>
+    <path d="M-62,-130 H62 V-24 C62,-8 48,0 32,0 H-32 C-48,0 -62,-8 -62,-24Z" fill="url(#mugA)"/>
+    <ellipse cx="0" cy="-130" rx="62" ry="12" fill="#C2304F"/>
+    <ellipse cx="0" cy="-128" rx="54" ry="8" fill="#6B3A2A"/>
+    <use href="#heart" transform="translate(0 -88) scale(1.6)" fill="#FFFFFF" opacity="0.9"/>
+    <rect x="-50" y="-118" width="10" height="80" rx="5" fill="#FFFFFF" opacity="0.2"/>
+  </g>
+
+  <!-- mug B (sunrise) -->
+  <g transform="translate(975 395)">
+    <ellipse cx="0" cy="2" rx="72" ry="9" fill="#6E1F35" opacity="0.35"/>
+    <path d="M52,-90 C100,-90 100,-28 52,-28" fill="none" stroke="#F27A36" stroke-width="15"/>
+    <path d="M-56,-118 H56 V-22 C56,-8 44,0 30,0 H-30 C-44,0 -56,-8 -56,-22Z" fill="url(#mugB)"/>
+    <ellipse cx="0" cy="-118" rx="56" ry="11" fill="#D8652A"/>
+    <ellipse cx="0" cy="-116" rx="48" ry="7" fill="#6B3A2A"/>
+    <circle cx="-14" cy="-70" r="8" fill="#FFFFFF" opacity="0.85"/>
+    <circle cx="14" cy="-70" r="8" fill="#FFFFFF" opacity="0.85"/>
+    <circle cx="0" cy="-48" r="8" fill="#FFFFFF" opacity="0.85"/>
+    <rect x="-44" y="-106" width="9" height="72" rx="4.5" fill="#FFFFFF" opacity="0.2"/>
+  </g>
+
+  <!-- plant -->
+  <g transform="translate(1135 395)">
+    <path d="M0,-70 C-10,-110 -50,-120 -60,-150 C-20,-150 0,-115 0,-70Z" fill="#1FA65A"/>
+    <path d="M0,-70 C8,-120 40,-140 62,-160 C64,-120 30,-95 0,-70Z" fill="#4ADE80"/>
+    <path d="M0,-70 C-4,-100 4,-130 -6,-170 C14,-150 18,-110 0,-70Z" fill="#13803F"/>
+    <path d="M-34,-72 H34 L26,0 H-26Z" fill="url(#pot)"/>
+    <rect x="-38" y="-80" width="76" height="14" rx="5" fill="#F4FAF2"/>
+  </g>
+
+  <!-- sparkles -->
+  <g fill="#FFF4C2">
+    <use href="#sp" transform="translate(640 220) scale(1.1)"/>
+    <use href="#sp" transform="translate(1150 260) scale(0.8)"/>
+    <use href="#sp" transform="translate(940 40) scale(0.9)"/>
+  </g>
+</svg>

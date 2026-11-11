@@ -181,4 +181,23 @@ object CalendarSyncManager {
             null
         }
     }
+
+    /**
+     * Deletes calendar events this app created (title "[PlantHabit] …" or the old "[Sprout] …",
+     * with our "Habit tracked with" description). Returns how many were removed.
+     */
+    fun deleteAppEvents(context: Context): Int {
+        if (!hasCalendarPermission(context)) return 0
+        return try {
+            context.contentResolver.delete(
+                CalendarContract.Events.CONTENT_URI,
+                "(${CalendarContract.Events.TITLE} LIKE ? OR ${CalendarContract.Events.TITLE} LIKE ?) AND " +
+                    "${CalendarContract.Events.DESCRIPTION} LIKE ?",
+                arrayOf("[PlantHabit] %", "[Sprout] %", "Habit tracked with %")
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            0
+        }
+    }
 }

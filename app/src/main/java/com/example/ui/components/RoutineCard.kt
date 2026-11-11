@@ -139,24 +139,6 @@ fun RoutineCard(
                 )
             }
 
-            // Social motivation indicator
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.padding(start = 6.dp, top = 6.dp, bottom = 4.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(c.primary)
-                )
-                Text(
-                    text = "You and 81 others today",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = c.textSecondary
-                )
-            }
         }
     }
 }
@@ -244,11 +226,12 @@ private fun RoutineTaskRow(
         }
 
         // Habit icon
-        IconBubble(background = if (isDone) c.sunSoft else c.cardMuted, size = 30.dp) {
+        val iconColors = c.iconAccent(AppIcon.of(habit.iconName))
+        IconBubble(background = if (isDone) c.sunSoft else iconColors.soft, size = 30.dp) {
             Icon(
-                imageVector = if (habit.iconName == "alarm") Icons.Default.Alarm else Icons.Default.AutoAwesome,
+                imageVector = AppIcon.of(habit.iconName).vector,
                 contentDescription = null,
-                tint = if (isDone) c.sun else c.textSecondary,
+                tint = if (isDone) c.sun else iconColors.color,
                 modifier = Modifier.size(16.dp)
             )
         }

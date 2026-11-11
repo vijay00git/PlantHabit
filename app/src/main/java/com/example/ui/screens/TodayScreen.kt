@@ -88,6 +88,7 @@ fun TodayScreen(
     currentMood: MoodLogEntity? = null,
     onSelectMood: (Int, String) -> Unit = { _, _ -> },
     goalChallenges: List<ChallengeEntity> = emptyList(),
+    moodGoodPercent: Int? = null,
     onIncrementGoal: (String, Float) -> Unit = { _, _ -> },
     onOpenChallengeDetails: (ChallengeEntity) -> Unit = {},
     modifier: Modifier = Modifier
@@ -285,7 +286,8 @@ fun TodayScreen(
             ) {
                 MoodTrackerCard(
                     currentMood = currentMood,
-                    onSelectMood = onSelectMood
+                    onSelectMood = onSelectMood,
+                    goodPercent = moodGoodPercent
                 )
             }
         }

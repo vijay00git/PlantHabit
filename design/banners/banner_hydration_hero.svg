@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D9F4FF"/>
+      <stop offset="0.7" stop-color="#8FDAFB"/>
+      <stop offset="1" stop-color="#5CC6F7"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="w1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5CC6F7"/>
+      <stop offset="1" stop-color="#2AA7E8"/>
+    </linearGradient>
+    <linearGradient id="w2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2AA7E8"/>
+      <stop offset="1" stop-color="#1480C4"/>
+    </linearGradient>
+    <linearGradient id="w3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A8FD6"/>
+      <stop offset="1" stop-color="#0E5E99"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7AD3FA"/>
+      <stop offset="1" stop-color="#2AA7E8"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.75"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="bottle" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#1FA65A"/>
+    </linearGradient>
+    <clipPath id="glassClip">
+      <path d="M-85,-230 H85 L70,0 C68,14 58,22 44,22 H-44 C-58,22 -68,14 -70,0Z"/>
+    </clipPath>
+    <path id="drop" d="M0,-30 C10,-15 20,-2 20,10 A20,20 0 0 1 -20,10 C-20,-2 -10,-15 0,-30Z"/>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#bg)"/>
+  <circle cx="880" cy="230" r="270" fill="url(#halo)"/>
+  <!-- clouds -->
+  <g fill="#FFFFFF" opacity="0.9">
+    <g transform="translate(200 90)">
+      <ellipse cx="0" cy="10" rx="80" ry="18"/>
+      <circle cx="-22" cy="0" r="24"/>
+      <circle cx="20" cy="-8" r="32"/>
+    </g>
+    <g transform="translate(1100 80) scale(0.7)">
+      <ellipse cx="0" cy="10" rx="80" ry="18"/>
+      <circle cx="-22" cy="0" r="24"/>
+      <circle cx="20" cy="-8" r="32"/>
+    </g>
+  </g>
+
+  <!-- waves -->
+  <path d="M0,370 C80,350 160,350 240,370 C320,390 400,390 480,370 C560,350 640,350 720,370 C800,390 880,390 960,370 C1040,350 1120,350 1200,370 V500 H0Z" fill="url(#w1)"/>
+  <path d="M0,410 C100,390 200,390 300,410 C400,430 500,430 600,410 C700,390 800,390 900,410 C1000,430 1100,430 1200,410 V500 H0Z" fill="url(#w2)"/>
+  <path d="M0,455 C120,440 240,440 360,455 C480,470 600,470 720,455 C840,440 960,440 1080,455 C1140,462 1170,462 1200,458 V500 H0Z" fill="url(#w3)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.6">
+    <path d="M120,392 q20,-10 40,0"/>
+    <path d="M420,430 q20,-10 40,0"/>
+    <path d="M640,388 q20,-10 40,0"/>
+  </g>
+
+  <!-- bottle (behind glass) -->
+  <g transform="translate(1030 395)">
+    <ellipse cx="0" cy="6" rx="58" ry="10" fill="#0E5E99" opacity="0.3"/>
+    <rect x="-24" y="-275" width="48" height="26" rx="8" fill="#13803F"/>
+    <path d="M-20,-252 H20 C20,-230 52,-220 52,-190 V-14 C52,-4 44,4 34,4 H-34 C-44,4 -52,-4 -52,-14 V-190 C-52,-220 -20,-230 -20,-252Z" fill="url(#bottle)"/>
+    <rect x="-52" y="-150" width="104" height="60" fill="#F4FAF2" opacity="0.9"/>
+    <path d="M-12,-128 C-4,-118 4,-118 12,-128 M-12,-112 C-4,-102 4,-102 12,-112" fill="none" stroke="#2AA7E8" stroke-width="4" stroke-linecap="round"/>
+    <rect x="-40" y="-200" width="10" height="170" rx="5" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+
+  <!-- glass of water -->
+  <g transform="translate(860 400)">
+    <ellipse cx="0" cy="22" rx="100" ry="14" fill="#0E5E99" opacity="0.3"/>
+    <g clip-path="url(#glassClip)">
+      <path d="M-100,-170 C-60,-185 -30,-155 0,-170 C30,-185 60,-155 100,-170 V40 H-100Z" fill="url(#water)"/>
+      <path d="M-100,-170 C-60,-185 -30,-155 0,-170 C30,-185 60,-155 100,-170 V-160 C60,-145 30,-175 0,-160 C-30,-145 -60,-175 -100,-160Z" fill="#FFFFFF" opacity="0.5"/>
+      <g fill="#FFFFFF" opacity="0.7">
+        <circle cx="-30" cy="-60" r="7"/>
+        <circle cx="20" cy="-100" r="5"/>
+        <circle cx="-10" cy="-130" r="4"/>
+        <circle cx="40" cy="-30" r="8"/>
+        <circle cx="10" cy="-50" r="3"/>
+      </g>
+      <!-- lemon slice + mint -->
+      <circle cx="40" cy="-140" r="30" fill="#FACC32"/>
+      <circle cx="40" cy="-140" r="24" fill="#FFF0A0"/>
+      <g stroke="#FACC32" stroke-width="3">
+        <path d="M40,-164 V-116 M16,-140 H64 M23,-157 L57,-123 M57,-157 L23,-123"/>
+      </g>
+    </g>
+    <path d="M-85,-230 H85 L70,0 C68,14 58,22 44,22 H-44 C-58,22 -68,14 -70,0Z" fill="url(#glass)" stroke="#FFFFFF" stroke-width="5" stroke-linejoin="round"/>
+    <rect x="-66" y="-210" width="12" height="190" rx="6" fill="#FFFFFF" opacity="0.65" transform="rotate(-3.5)"/>
+    <!-- mint leaves on rim -->
+    <path d="M-60,-232 C-90,-270 -60,-300 -20,-300 C-20,-262 -40,-240 -60,-232Z" fill="#1FA65A"/>
+    <path d="M-60,-232 C-48,-260 -34,-280 -22,-296" fill="none" stroke="#13803F" stroke-width="3"/>
+    <path d="M-50,-232 C-30,-262 0,-262 20,-250 C0,-232 -24,-226 -50,-232Z" fill="#4ADE80"/>
+    <!-- straw -->
+    <path d="M30,-30 L95,-300 L118,-300" fill="none" stroke="#FF7F3F" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M30,-30 L95,-300" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-dasharray="14 14" stroke-linecap="butt" opacity="0.7"/>
+  </g>
+
+  <!-- floating droplets -->
+  <g fill="#2AA7E8">
+    <use href="#drop" transform="translate(690 150) scale(1.1)"/>
+    <use href="#drop" transform="translate(1150 230) scale(0.9)"/>
+    <use href="#drop" transform="translate(640 280) scale(0.6)"/>
+  </g>
+  <g fill="#5CC6F7">
+    <use href="#drop" transform="translate(760 80) scale(0.7)"/>
+    <use href="#drop" transform="translate(1000 60) scale(0.8)"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.8">
+    <circle cx="684" cy="152" r="5"/>
+    <circle cx="1145" cy="232" r="4"/>
+  </g>
+  <!-- bubbles -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.8">
+    <circle cx="560" cy="200" r="14"/>
+    <circle cx="600" cy="150" r="8"/>
+    <circle cx="1170" cy="320" r="10"/>
+    <circle cx="420" cy="300" r="9"/>
+  </g>
+  <g fill="#FFFFFF">
+    <use href="#sp" transform="translate(940 130) scale(1.3)"/>
+    <use href="#sp" transform="translate(720 220) scale(0.9)"/>
+  </g>
+</svg>

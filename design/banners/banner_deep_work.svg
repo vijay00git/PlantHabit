@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0E2B26"/>
+      <stop offset="0.6" stop-color="#103A32"/>
+      <stop offset="1" stop-color="#0B1410"/>
+    </linearGradient>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0B1B3A"/>
+      <stop offset="1" stop-color="#1F3E6E"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFD27A" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#F2A80F" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#F2A80F" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE7A8" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFE7A8" stop-opacity="0.05"/>
+    </linearGradient>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2C5A45"/>
+      <stop offset="1" stop-color="#14302A"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1FA65A"/>
+      <stop offset="1" stop-color="#0E5E4A"/>
+    </linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FACC32"/>
+      <stop offset="1" stop-color="#F2A80F"/>
+    </linearGradient>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+
+  <rect width="1200" height="500" fill="url(#wall)"/>
+
+  <!-- night window -->
+  <g transform="translate(700 50)">
+    <rect x="-10" y="-10" width="240" height="200" rx="14" fill="#1C4A3F"/>
+    <rect x="0" y="0" width="220" height="180" rx="8" fill="url(#night)"/>
+    <circle cx="160" cy="50" r="24" fill="#FFF3C4"/>
+    <circle cx="172" cy="42" r="22" fill="#152D55"/>
+    <g fill="#FFFFFF">
+      <circle cx="40" cy="30" r="1.8"/><circle cx="90" cy="60" r="1.5"/><circle cx="60" cy="100" r="1.6"/><circle cx="120" cy="20" r="1.4"/><circle cx="190" cy="120" r="1.5"/>
+    </g>
+    <path d="M0,150 H30 V120 H50 V140 H70 V105 H95 V135 H120 V115 H140 V150 H165 V128 H190 V150 H220 V180 H0Z" fill="#0B1B30"/>
+    <g fill="#FACC32" opacity="0.8">
+      <rect x="76" y="115" width="5" height="6"/><rect x="85" y="125" width="5" height="6"/><rect x="36" y="130" width="5" height="6"/><rect x="126" y="125" width="5" height="6"/><rect x="172" y="138" width="5" height="6"/>
+    </g>
+    <path d="M110,0 V180 M0,90 H220" stroke="#1C4A3F" stroke-width="8"/>
+  </g>
+
+  <!-- lamp glow -->
+  <circle cx="1000" cy="290" r="300" fill="url(#lamp)"/>
+  <path d="M1030,214 L1092,234 L1130,400 L830,400Z" fill="url(#cone)"/>
+
+  <!-- desk -->
+  <rect x="0" y="400" width="1200" height="100" fill="url(#desk)"/>
+  <rect x="0" y="394" width="1200" height="10" fill="#3E7A5E"/>
+
+  <!-- desk lamp -->
+  <g transform="translate(1150 400)">
+    <ellipse cx="0" cy="-4" rx="44" ry="10" fill="#0B1410"/>
+    <path d="M0,-8 L-34,-120" stroke="#0B1410" stroke-width="10" stroke-linecap="round"/>
+    <path d="M-34,-120 L-80,-196" stroke="#0B1410" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="-34" cy="-120" r="9" fill="#FF7F3F"/>
+    <g transform="translate(-80 -196) rotate(25)">
+      <path d="M-56,22 C-50,-24 50,-24 56,22Z" fill="#FF7F3F"/>
+      <ellipse cx="0" cy="22" rx="56" ry="9" fill="#FFE7A8"/>
+    </g>
+  </g>
+
+  <!-- laptop -->
+  <g transform="translate(830 400)">
+    <ellipse cx="0" cy="4" rx="190" ry="10" fill="#0B1410" opacity="0.5"/>
+    <path d="M-150,-200 H150 C158,-200 164,-194 164,-186 V-14 H-164 V-186 C-164,-194 -158,-200 -150,-200Z" fill="#1A2522"/>
+    <rect x="-148" y="-186" width="296" height="164" rx="6" fill="url(#screen)"/>
+    <!-- abstract focus UI -->
+    <circle cx="-70" cy="-104" r="46" fill="none" stroke="#0E5E4A" stroke-width="10"/>
+    <circle cx="-70" cy="-104" r="46" fill="none" stroke="#FACC32" stroke-width="10" stroke-dasharray="210 300" stroke-linecap="round" transform="rotate(-90 -70 -104)"/>
+    <circle cx="-70" cy="-104" r="8" fill="#F4FAF2"/>
+    <rect x="0" y="-150" width="110" height="12" rx="6" fill="#F4FAF2" opacity="0.85"/>
+    <rect x="0" y="-126" width="80" height="12" rx="6" fill="#F4FAF2" opacity="0.5"/>
+    <rect x="0" y="-102" width="96" height="12" rx="6" fill="#F4FAF2" opacity="0.5"/>
+    <rect x="0" y="-70" width="56" height="22" rx="11" fill="#FF7F3F"/>
+    <path d="M-190,-14 H190 L176,0 H-176Z" fill="#2E3D39"/>
+    <rect x="-30" y="-14" width="60" height="5" rx="2.5" fill="#1A2522"/>
+  </g>
+
+  <!-- hourglass -->
+  <g transform="translate(1062 400) scale(0.8)">
+    <ellipse cx="0" cy="-2" rx="38" ry="6" fill="#0B1410" opacity="0.5"/>
+    <rect x="-36" y="-14" width="72" height="12" rx="4" fill="#C98A4B"/>
+    <rect x="-36" y="-134" width="72" height="12" rx="4" fill="#C98A4B"/>
+    <rect x="-30" y="-122" width="6" height="108" fill="#A06A34"/>
+    <rect x="24" y="-122" width="6" height="108" fill="#A06A34"/>
+    <path d="M-22,-122 H22 C22,-90 4,-80 2,-68 C4,-56 22,-46 22,-14 H-22 C-22,-46 -4,-56 -2,-68 C-4,-80 -22,-90 -22,-122Z" fill="#DFF4FF" opacity="0.25" stroke="#DFF4FF" stroke-opacity="0.5" stroke-width="2"/>
+    <path d="M-14,-104 H14 C12,-90 4,-82 0,-74 C-4,-82 -12,-90 -14,-104Z" fill="url(#sand)"/>
+    <path d="M-20,-14 C-18,-30 -6,-38 0,-40 C6,-38 18,-30 20,-14Z" fill="url(#sand)"/>
+    <path d="M0,-74 V-40" stroke="#FACC32" stroke-width="2"/>
+  </g>
+
+  <!-- plant -->
+  <g transform="translate(590 400) scale(1.15)">
+    <path d="M0,-50 C-8,-90 -40,-96 -50,-124 C-16,-126 2,-96 0,-50Z" fill="#1FA65A"/>
+    <path d="M0,-50 C6,-96 32,-108 46,-130 C54,-96 30,-74 0,-50Z" fill="#4ADE80"/>
+    <path d="M0,-50 C-4,-84 4,-114 -4,-146 C14,-120 16,-84 0,-50Z" fill="#13803F"/>
+    <path d="M-26,-54 H26 L20,0 H-20Z" fill="#F4FAF2"/>
+    <rect x="-30" y="-62" width="60" height="12" rx="5" fill="#DCE8DA"/>
+  </g>
+
+  <!-- dust motes in light -->
+  <g fill="#FFE7A8">
+    <circle cx="1040" cy="250" r="2.5" opacity="0.8"/>
+    <circle cx="1080" cy="320" r="2" opacity="0.7"/>
+    <circle cx="980" cy="300" r="1.8" opacity="0.6"/>
+  </g>
+  <g fill="#FACC32">
+    <use href="#sp" transform="translate(600 210) scale(1)"/>
+    <use href="#sp" transform="translate(1150 80) scale(0.8)"/>
+  </g>
+  <g fill="#FFFFFF" opacity="0.5">
+    <circle cx="120" cy="80" r="1.6"/>
+    <circle cx="320" cy="140" r="1.4"/>
+    <circle cx="480" cy="60" r="1.6"/>
+  </g>
+</svg>

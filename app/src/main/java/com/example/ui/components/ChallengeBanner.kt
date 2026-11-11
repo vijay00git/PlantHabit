@@ -9,7 +9,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.R
 import com.example.data.local.BannerStorage
 import com.example.data.model.ChallengeEntity
 import java.io.File
@@ -20,21 +19,23 @@ sealed interface BannerSource {
     data class Bundled(val resId: Int) : BannerSource
 }
 
-private fun bundledBanner(name: String?): Int? = when (name) {
-    "challenge_gratitude" -> R.drawable.challenge_gratitude
-    "routine_morning" -> R.drawable.routine_morning
-    else -> null
+/** Looks up a bundled drawable by name (e.g. "banner_read_daily"); 0/unknown → null. */
+@android.annotation.SuppressLint("DiscouragedApi")
+private fun bundledBanner(context: android.content.Context, name: String?): Int? {
+    if (name.isNullOrBlank()) return null
+    return context.resources.getIdentifier(name, "drawable", context.packageName).takeIf { it != 0 }
 }
 
 /** The challenge's banner, or null if it has none (callers then draw a gradient). */
 @Composable
 fun rememberBannerSource(challenge: ChallengeEntity): BannerSource? {
     val ref = challenge.bannerResName
+    val context = LocalContext.current
     return remember(ref) {
         if (BannerStorage.isCustom(ref)) {
             File(ref!!).takeIf { it.exists() }?.let { BannerSource.Photo(it) }
         } else {
-            bundledBanner(ref)?.let { BannerSource.Bundled(it) }
+            bundledBanner(context, ref)?.let { BannerSource.Bundled(it) }
         }
     }
 }

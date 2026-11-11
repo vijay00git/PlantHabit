@@ -230,7 +230,7 @@ fun SproutApp(viewModel: SproutViewModel) {
                             )
                         },
                         onOpenFocusMode = { viewModel.isFocusModeOpen.value = true },
-                        activeStreakDays = analyticsData?.activeStreakDays ?: 7,
+                        activeStreakDays = analyticsData?.activeStreakDays ?: 0,
                         currentMood = todayMood,
                         onSelectMood = { score, label ->
                             viewModel.logMood(score, label)
@@ -239,6 +239,7 @@ fun SproutApp(viewModel: SproutViewModel) {
                             }
                         },
                         goalChallenges = challenges,
+                        moodGoodPercent = analyticsData?.takeIf { it.moodTotalDays > 0 }?.moodGoodPercentage,
                         onIncrementGoal = { challengeId, delta ->
                             viewModel.incrementGoal(challengeId, delta)
                             coroutineScope.launch {
@@ -445,7 +446,13 @@ fun SproutApp(viewModel: SproutViewModel) {
                             snackbarHostState.showSnackbar("Test reminder dispatched! Check notification tray 🔔")
                         }
                     },
-                    onDismiss = { viewModel.isSettingsOpen.value = false }
+                    onDismiss = { viewModel.isSettingsOpen.value = false },
+                    onClearAllData = { removeEvents ->
+                        viewModel.isSettingsOpen.value = false
+                        viewModel.clearAllData(removeEvents) { message ->
+                            coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+                        }
+                    }
                 )
             }
         }
