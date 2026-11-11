@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Sprout"
+rootProject.name = "PlantHabit"
 
 include(":app")

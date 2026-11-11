@@ -72,15 +72,15 @@ jobs:
       - name: Collect APKs
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk "dist/Sprout-${VERSION_NAME}-debug.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "dist/PlantHabit-${VERSION_NAME}-debug.apk"
           if [ -f app/build/outputs/apk/release/app-release.apk ]; then
-            cp app/build/outputs/apk/release/app-release.apk "dist/Sprout-${VERSION_NAME}-release.apk"
+            cp app/build/outputs/apk/release/app-release.apk "dist/PlantHabit-${VERSION_NAME}-release.apk"
           fi
           ls -lh dist
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Sprout-${{ env.VERSION_NAME }}
+          name: PlantHabit-${{ env.VERSION_NAME }}
           path: dist/*.apk
 
       # Tag push (e.g. v1.2.0) -> a proper GitHub Release
@@ -90,7 +90,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" dist/*.apk \
-            --title "Sprout $GITHUB_REF_NAME" --generate-notes
+            --title "PlantHabit $GITHUB_REF_NAME" --generate-notes
 
       # Push to main -> rolling "latest-build" pre-release, always the newest APK
       - name: Publish rolling pre-release

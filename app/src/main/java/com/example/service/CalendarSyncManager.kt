@@ -154,8 +154,8 @@ object CalendarSyncManager {
         val values = ContentValues().apply {
             put(CalendarContract.Events.DTSTART, startCal.timeInMillis)
             put(CalendarContract.Events.DTEND, endCal.timeInMillis)
-            put(CalendarContract.Events.TITLE, "[Sprout] ${habit.title}")
-            put(CalendarContract.Events.DESCRIPTION, "Habit tracked with Sprout: ${habit.targetValue} ${habit.unit}. ${habit.description}")
+            put(CalendarContract.Events.TITLE, "[PlantHabit] ${habit.title}")
+            put(CalendarContract.Events.DESCRIPTION, "Habit tracked with PlantHabit: ${habit.targetValue} ${habit.unit}. ${habit.description}")
             put(CalendarContract.Events.CALENDAR_ID, calendarId)
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             put(CalendarContract.Events.STATUS, CalendarContract.Events.STATUS_CONFIRMED)

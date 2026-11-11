@@ -21,7 +21,7 @@ object NotificationHelper {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Daily reminders and streak notifications for Sprout habits"
+                description = "Daily reminders and streak notifications for PlantHabit habits"
                 enableVibration(true)
                 setShowBadge(true)
             }

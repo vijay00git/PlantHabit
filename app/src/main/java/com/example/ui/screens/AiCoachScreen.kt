@@ -121,7 +121,7 @@ fun AiCoachScreen(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "Sprout AI Coach",
+                        text = "PlantHabit AI Coach",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
