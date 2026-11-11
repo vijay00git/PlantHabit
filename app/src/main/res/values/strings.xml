@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">PlantHabit</string>
+    <string name="widget_name">Today\'s habits</string>
+    <string name="widget_description">Tick off today\'s habits right from your home screen</string>
 </resources>

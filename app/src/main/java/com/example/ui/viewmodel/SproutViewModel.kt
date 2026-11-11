@@ -347,6 +347,7 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
                 closeChallengeDetails()
                 refreshAnalytics()
                 loadCalendarEvents()
+                com.example.widget.PlantHabitWidget.refresh(context)
                 onDone("Restored ${parsed.summary.habits} habits and ${parsed.summary.checkIns} check-ins 🌱")
             } catch (e: Exception) {
                 onDone("Restore failed: ${e.localizedMessage ?: "unknown error"}")

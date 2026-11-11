@@ -81,6 +81,7 @@ class ReminderReceiver : BroadcastReceiver() {
                         completedAt = System.currentTimeMillis()
                     )
                     db.habitDao().insertOrUpdateLog(updatedLog)
+                    com.example.widget.PlantHabitWidget.refresh(context)
                 }
             }
 

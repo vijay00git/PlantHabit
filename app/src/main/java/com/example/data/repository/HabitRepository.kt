@@ -10,6 +10,7 @@ import com.example.data.model.HabitLogEntity
 import com.example.data.model.HabitWithStatus
 import com.example.service.CalendarSyncManager
 import com.example.service.ReminderScheduler
+import com.example.widget.PlantHabitWidget
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.text.SimpleDateFormat
@@ -169,6 +170,7 @@ class HabitRepository(
         habitDao.deleteAllHabits()
         habitDao.deleteAllMoodLogs()
         habitDao.resetAllChallengeProgress()
+        PlantHabitWidget.refresh(context)
     }
 
     suspend fun logHabitProgress(habit: HabitEntity, dateString: String, delta: Int): HabitLogEntity {
@@ -195,6 +197,7 @@ class HabitRepository(
         )
 
         habitDao.insertOrUpdateLog(updatedLog)
+        PlantHabitWidget.refresh(context)
         return updatedLog
     }
 
@@ -225,6 +228,7 @@ class HabitRepository(
         )
 
         habitDao.insertOrUpdateLog(updatedLog)
+        PlantHabitWidget.refresh(context)
         return newCompleted
     }
 
@@ -235,6 +239,7 @@ class HabitRepository(
             ReminderScheduler.scheduleHabitReminder(context, createdHabit)
         }
         syncCalendarEvent(createdHabit)
+        PlantHabitWidget.refresh(context)
         return habitId
     }
 
@@ -246,6 +251,7 @@ class HabitRepository(
             ReminderScheduler.cancelHabitReminder(context, habit.id)
         }
         syncCalendarEvent(habit)
+        PlantHabitWidget.refresh(context)
     }
 
     /** Keeps the habit's single recurring calendar event in line with its settings. */
@@ -273,6 +279,7 @@ class HabitRepository(
         CalendarSyncManager.deleteHabitEvent(context, habitDao.getHabitById(habitId)?.calendarEventId)
         habitDao.deleteLogsForHabit(habitId)
         habitDao.deleteHabit(habitId)
+        PlantHabitWidget.refresh(context)
     }
 
     val moodLogsFlow: Flow<List<com.example.data.model.MoodLogEntity>> = habitDao.getAllMoodLogsFlow()
