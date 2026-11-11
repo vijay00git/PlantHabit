@@ -96,6 +96,12 @@ interface HabitDao {
     @Query("SELECT * FROM challenges")
     suspend fun getAllChallengesList(): List<ChallengeEntity>
 
+    @Query("DELETE FROM challenges")
+    suspend fun deleteAllChallenges()
+
+    @Query("SELECT * FROM habits")
+    suspend fun getAllHabitsIncludingArchived(): List<HabitEntity>
+
     @Query("SELECT * FROM mood_logs ORDER BY date DESC")
     suspend fun getAllMoodLogs(): List<MoodLogEntity>
 

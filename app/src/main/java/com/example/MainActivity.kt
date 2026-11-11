@@ -118,6 +118,20 @@ fun SproutApp(viewModel: SproutViewModel) {
     val selectedChallengeForDetails by viewModel.selectedChallengeForDetails.collectAsState()
 
     var templateDraft by remember { mutableStateOf("") }
+    var pendingRestore by remember { mutableStateOf<com.example.data.local.BackupManager.Parsed?>(null) }
+
+    // Backup: system "save as" picker; Restore: system file picker
+    val backupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) viewModel.exportBackup(uri) { msg -> coroutineScope.launch { snackbarHostState.showSnackbar(msg) } }
+    }
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) viewModel.previewBackup(uri) { parsed, error ->
+            if (parsed != null) pendingRestore = parsed
+            else coroutineScope.launch { snackbarHostState.showSnackbar(error ?: "Can't restore that file") }
+        }
+    }
 
     // Activity Result Launchers
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
@@ -471,10 +485,45 @@ fun SproutApp(viewModel: SproutViewModel) {
                             coroutineScope.launch { snackbarHostState.showSnackbar("Calendar settings saved 🗓️") }
                         }
                     },
+                    onBackup = {
+                        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                        backupLauncher.launch("PlantHabit-backup-$stamp.json")
+                    },
+                    onRestore = { restoreLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                     onClearAllData = { removeEvents ->
                         viewModel.isSettingsOpen.value = false
                         viewModel.clearAllData(removeEvents) { message ->
                             coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+                        }
+                    }
+                )
+            }
+
+            pendingRestore?.let { parsed ->
+                val sm = parsed.summary
+                val date = java.text.SimpleDateFormat("d MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(sm.exportedAt))
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { pendingRestore = null },
+                    containerColor = PlantTheme.colors.surface,
+                    title = { androidx.compose.material3.Text("Restore backup?", color = PlantTheme.colors.textPrimary) },
+                    text = {
+                        androidx.compose.material3.Text(
+                            "Backup from $date:\n• ${sm.habits} habits\n• ${sm.checkIns} check-ins\n• ${sm.moods} mood logs\n" +
+                                "• ${sm.challenges} challenges\n• ${sm.photos} banner photos\n\n" +
+                                "This replaces everything currently in the app.",
+                            color = PlantTheme.colors.textSecondary
+                        )
+                    },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = {
+                            pendingRestore = null
+                            viewModel.isSettingsOpen.value = false
+                            viewModel.restoreBackup(parsed) { msg -> coroutineScope.launch { snackbarHostState.showSnackbar(msg) } }
+                        }) { androidx.compose.material3.Text("Restore", color = PlantTheme.colors.primary) }
+                    },
+                    dismissButton = {
+                        androidx.compose.material3.TextButton(onClick = { pendingRestore = null }) {
+                            androidx.compose.material3.Text("Cancel", color = PlantTheme.colors.textSecondary)
                         }
                     }
                 )

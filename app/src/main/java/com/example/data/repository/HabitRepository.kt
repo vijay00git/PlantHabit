@@ -259,6 +259,8 @@ class HabitRepository(
         if (newId != habit.calendarEventId) habitDao.updateHabit(habit.copy(calendarEventId = newId))
     }
 
+    suspend fun getAllHabitsOnce(): List<HabitEntity> = habitDao.getAllHabitsList()
+
     /** Creates/updates events for every habit with calendar sync on. Returns how many. */
     suspend fun syncAllHabitsToCalendar(): Int {
         val habits = habitDao.getAllHabitsList().filter { it.syncWithGoogleCalendar }

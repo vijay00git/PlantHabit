@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
@@ -98,6 +100,8 @@ fun SettingsDialog(
     targetCalendarId: Long? = null,
     onOpenCalendarPicker: () -> Unit = {},
     onSaveCalendarChoice: (shown: Set<Long>?, target: Long?) -> Unit = { _, _ -> },
+    onBackup: () -> Unit = {},
+    onRestore: () -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
@@ -263,6 +267,33 @@ fun SettingsDialog(
 
                 // Data
                 SettingsGroup(title = "YOUR DATA", index = 3) {
+                    SettingsRowHeader(
+                        icon = Icons.Default.CloudUpload,
+                        tint = c.primary,
+                        bubble = c.primarySoft,
+                        title = "Backup",
+                        subtitle = "Save everything — habits, history, moods, challenges and photos — to a file you can keep anywhere (Drive, Downloads…)."
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SettingsActionButton(
+                            text = "Back up",
+                            icon = Icons.Default.CloudUpload,
+                            container = c.primary,
+                            content = c.onPrimary,
+                            modifier = Modifier.weight(1f).testTag("btn_backup"),
+                            onClick = onBackup
+                        )
+                        SettingsActionButton(
+                            text = "Restore",
+                            icon = Icons.Default.CloudDownload,
+                            container = c.primarySoft,
+                            content = c.primary,
+                            modifier = Modifier.weight(1f).testTag("btn_restore"),
+                            onClick = onRestore
+                        )
+                    }
+                    Spacer(Modifier.height(18.dp))
                     SettingsRowHeader(
                         icon = Icons.Default.DeleteSweep,
                         tint = c.berry,

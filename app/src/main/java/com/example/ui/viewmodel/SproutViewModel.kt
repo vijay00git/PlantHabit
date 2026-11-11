@@ -293,6 +293,67 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    // ---- Backup & restore ----
+
+    fun exportBackup(uri: Uri, onDone: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            val message = try {
+                val out = context.contentResolver.openOutputStream(uri) ?: error("Couldn't open the file")
+                val summary = out.use {
+                    com.example.data.local.BackupManager.export(context, db, themeMode.value, it)
+                }
+                "Backed up ${summary.habits} habits, ${summary.checkIns} check-ins and ${summary.moods} moods 💾"
+            } catch (e: Exception) {
+                "Backup failed: ${e.localizedMessage ?: "unknown error"}"
+            }
+            onDone(message)
+        }
+    }
+
+    /** Reads a backup file and reports what's in it, without changing anything. */
+    fun previewBackup(uri: Uri, onResult: (com.example.data.local.BackupManager.Parsed?, String?) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            try {
+                val parsed = context.contentResolver.openInputStream(uri)?.use {
+                    com.example.data.local.BackupManager.parse(it)
+                } ?: error("Couldn't open the file")
+                onResult(parsed, null)
+            } catch (e: Exception) {
+                onResult(null, "Can't restore: ${e.localizedMessage ?: "invalid file"}")
+            }
+        }
+    }
+
+    /** Replaces all data with the backup, then re-arms reminders and calendar events. */
+    fun restoreBackup(parsed: com.example.data.local.BackupManager.Parsed, onDone: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val context = getApplication<Application>()
+            try {
+                repository.getAllHabitsOnce().forEach {
+                    com.example.service.ReminderScheduler.cancelHabitReminder(context, it.id)
+                }
+                com.example.data.local.BackupManager.restore(context, db, parsed)
+                parsed.themeMode?.let { preferences.setThemeMode(it) }
+                repository.getAllHabitsOnce().filter { it.reminderEnabled }.forEach {
+                    com.example.service.ReminderScheduler.scheduleHabitReminder(context, it)
+                }
+                if (CalendarSyncManager.hasCalendarPermission(context)) {
+                    // Old event ids belong to the backup's device; start clean
+                    CalendarSyncManager.deleteAppEvents(context)
+                    repository.syncAllHabitsToCalendar()
+                }
+                closeChallengeDetails()
+                refreshAnalytics()
+                loadCalendarEvents()
+                onDone("Restored ${parsed.summary.habits} habits and ${parsed.summary.checkIns} check-ins 🌱")
+            } catch (e: Exception) {
+                onDone("Restore failed: ${e.localizedMessage ?: "unknown error"}")
+            }
+        }
+    }
+
     /** Wipes habits, logs, moods and challenge progress; optionally our calendar events too. */
     fun clearAllData(removeCalendarEvents: Boolean, onDone: (String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
