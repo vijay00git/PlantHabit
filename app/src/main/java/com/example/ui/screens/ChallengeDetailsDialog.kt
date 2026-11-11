@@ -1,5 +1,15 @@
 package com.example.ui.screens
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Replay
+import com.example.data.model.isFinished
 import com.example.ui.components.iconAccent
 import com.example.ui.components.AppIcon
 import android.net.Uri
@@ -92,7 +102,10 @@ fun ChallengeDetailsDialog(
     onDismiss: () -> Unit,
     onPickBanner: (Uri) -> Unit = {},
     onRemoveBanner: () -> Unit = {},
+    onRestart: () -> Unit = {},
+    onFinish: (keepHabits: Boolean) -> Unit = {},
 ) {
+    val finished = challenge.isFinished()
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
     val accent = c.categoryColors(challenge.category)
@@ -155,6 +168,16 @@ fun ChallengeDetailsDialog(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    if (finished) {
+                        // Celebrate as soon as a finished challenge is opened
+                        LaunchedEffect(challenge.id) {
+                            delay(250)
+                            haptics.success()
+                            burstTrigger++
+                        }
+                        CompletionCard(challenge)
+                    }
+
                     // Description
                     if (challenge.description.isNotBlank()) {
                         Text(
@@ -234,7 +257,7 @@ fun ChallengeDetailsDialog(
                                     color = c.textPrimary
                                 )
                                 Text(
-                                    text = "${(progressRatio * 100).toInt()}% completed • On track",
+                                    text = if (progressRatio >= 1f) "Goal reached! 🎉" else "${(progressRatio * 100).toInt()}% completed",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = c.textSecondary
                                 )
@@ -283,7 +306,35 @@ fun ChallengeDetailsDialog(
                             .padding(top = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        if (!challenge.isJoined) {
+                        if (finished) {
+                            ChallengeGradientButton(
+                                text = "Restart challenge",
+                                icon = Icons.Default.Replay,
+                                onClick = {
+                                    haptics.success()
+                                    onRestart()
+                                },
+                                modifier = Modifier.fillMaxWidth().testTag("btn_restart_challenge")
+                            )
+                            ChallengeOutlinedButton(
+                                text = "Finish & keep the habits",
+                                onClick = {
+                                    haptics.tick()
+                                    onFinish(true)
+                                },
+                                modifier = Modifier.fillMaxWidth().testTag("btn_finish_keep"),
+                                height = 46.dp
+                            )
+                            ChallengeOutlinedButton(
+                                text = "Finish & remove the habits",
+                                onClick = {
+                                    haptics.reject()
+                                    onFinish(false)
+                                },
+                                modifier = Modifier.fillMaxWidth().testTag("btn_finish_remove"),
+                                height = 46.dp
+                            )
+                        } else if (!challenge.isJoined) {
                             ChallengeGradientButton(
                                 text = if (accepting) "Challenge accepted! 🎉" else "Accept Challenge & Add Habits 🌱",
                                 icon = Icons.Default.Check,
@@ -343,6 +394,42 @@ fun ChallengeDetailsDialog(
                 modifier = Modifier.matchParentSize(),
                 particleCount = 36
             )
+        }
+    }
+}
+
+@Composable
+private fun CompletionCard(challenge: ChallengeEntity) {
+    val c = PlantTheme.colors
+    val bounce = rememberInfiniteTransition(label = "trophy")
+    val scale by bounce.animateFloat(
+        initialValue = 1f, targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "trophyScale"
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(AppShapes.large)
+            .background(c.sunriseGradient)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Text("🏆", style = MaterialTheme.typography.displaySmall, modifier = Modifier.graphicsLayer { scaleX = scale; scaleY = scale })
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Challenge complete!", style = MaterialTheme.typography.titleLarge, color = Color.White)
+            val how = if (challenge.goalTarget > 0f && challenge.goalCurrent >= challenge.goalTarget)
+                "You reached ${challenge.goalTarget.toInt()} ${challenge.goalUnit} 🎯"
+            else "You stuck with it for all ${challenge.durationDays} days"
+            Text(how, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.92f))
+            if (challenge.timesCompleted > 0) {
+                Text(
+                    "Finished ${challenge.timesCompleted + 1} times so far",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+            }
         }
     }
 }
@@ -462,8 +549,13 @@ private fun DetailsHeader(
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 HeaderChip(text = challenge.category.uppercase(), accent = accent, icon = challengeCategoryIcon(challenge.category))
                 HeaderChip(text = "${challenge.durationDays} Days", accent = AccentPair(c.sun, c.sunSoft), icon = null)
-                if (challenge.isJoined) {
+                if (challenge.isFinished()) {
+                    HeaderChip(text = "Completed", accent = AccentPair(c.sun, c.sunSoft), icon = Icons.Default.EmojiEvents)
+                } else if (challenge.isJoined) {
                     HeaderChip(text = "Active", accent = AccentPair(c.primary, c.primarySoft), icon = Icons.Default.Check)
+                }
+                if (challenge.timesCompleted > 0) {
+                    HeaderChip(text = "🏆 ×${challenge.timesCompleted}", accent = AccentPair(c.sun, c.sunSoft), icon = null)
                 }
             }
             Text(

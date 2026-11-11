@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.data.model.isFinished
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 import com.example.ui.theme.heroGradient
@@ -808,6 +809,7 @@ private fun ChallengeTile(
                     .padding(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                if (challenge.timesCompleted > 0) TileChip("🏆 ×${challenge.timesCompleted}")
                 if (challenge.goalTarget > 0f) TileChip("🎯 Goal")
                 TileChip("${challenge.durationDays} days")
             }
@@ -945,21 +947,28 @@ private fun ActiveChallengeCard(
                 )
             }
 
+            val finished = challenge.isFinished()
             Row(
                 modifier = Modifier
                     .clip(AppShapes.pill)
-                    .background(c.primarySoft)
+                    .then(if (finished) Modifier.background(c.sunriseGradient) else Modifier.background(c.primarySoft))
                     .padding(horizontal = 9.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(AppShapes.pill)
-                        .background(c.primary)
+                if (!finished) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(AppShapes.pill)
+                            .background(c.primary)
+                    )
+                }
+                Text(
+                    text = if (finished) "🎉 Completed" else "Active",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (finished) Color.White else c.primary
                 )
-                Text(text = "Active", style = MaterialTheme.typography.labelSmall, color = c.primary)
             }
         }
 
@@ -1005,7 +1014,7 @@ private fun ActiveChallengeCard(
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Roadmap & tips",
+                    text = if (challenge.isFinished()) "Tap to celebrate" else "Roadmap & tips",
                     style = MaterialTheme.typography.labelMedium,
                     color = c.primary
                 )

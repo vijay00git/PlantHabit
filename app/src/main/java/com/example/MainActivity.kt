@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.data.model.isFinished
 import com.example.service.NotificationHelper
 import com.example.ui.components.CustomBottomBar
 import com.example.ui.screens.AnalyticsScreen
@@ -118,6 +119,16 @@ fun SproutApp(viewModel: SproutViewModel) {
     val selectedChallengeForDetails by viewModel.selectedChallengeForDetails.collectAsState()
 
     var templateDraft by remember { mutableStateOf("") }
+    // Celebrate a finished challenge once per launch
+    var celebratedOnce by remember { mutableStateOf(false) }
+    LaunchedEffect(challenges) {
+        if (!celebratedOnce) {
+            challenges.firstOrNull { it.isFinished() }?.let {
+                celebratedOnce = true
+                viewModel.openChallengeDetails(it)
+            }
+        }
+    }
     var pendingRestore by remember { mutableStateOf<com.example.data.local.BackupManager.Parsed?>(null) }
 
     // Backup: system "save as" picker; Restore: system file picker
@@ -342,6 +353,18 @@ fun SproutApp(viewModel: SproutViewModel) {
                     onPickBanner = { uri ->
                         viewModel.setChallengeBanner(challenge.id, uri) { _, message ->
                             coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+                        }
+                    },
+                    onRestart = {
+                        viewModel.restartChallenge(challenge.id)
+                        coroutineScope.launch { snackbarHostState.showSnackbar("'${challenge.title}' restarted — day 1 again! 🌱") }
+                    },
+                    onFinish = { keep ->
+                        viewModel.finishChallenge(challenge.id, keep)
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                if (keep) "Challenge finished — your habits stay 🏆" else "Challenge finished and its habits removed 🏆"
+                            )
                         }
                     },
                     onRemoveBanner = {

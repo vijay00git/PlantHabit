@@ -340,6 +340,38 @@ class HabitRepository(
         }
     }
 
+    /**
+     * Wraps up a finished challenge: counts the completion and un-joins it. With [keepHabits]
+     * its habits stay as regular habits; otherwise they're removed like leaving.
+     */
+    suspend fun finishChallenge(challengeId: String, keepHabits: Boolean) {
+        val challenge = habitDao.getChallengeById(challengeId) ?: return
+        habitDao.updateChallenge(
+            challenge.copy(
+                isJoined = false, startedAt = 0L, currentDay = 1, completedTasksToday = 0,
+                timesCompleted = challenge.timesCompleted + 1
+            )
+        )
+        val linked = habitDao.getHabitsForChallenge(challengeId)
+        if (keepHabits) {
+            linked.forEach { habitDao.updateHabit(it.copy(challengeId = null)) }
+        } else {
+            linked.forEach { deleteHabit(it.id) }
+        }
+        PlantHabitWidget.refresh(context)
+    }
+
+    /** Counts the completion and starts the same challenge again from day 1 (habits stay). */
+    suspend fun restartChallenge(challengeId: String) {
+        val challenge = habitDao.getChallengeById(challengeId) ?: return
+        habitDao.updateChallenge(
+            challenge.copy(
+                isJoined = true, startedAt = System.currentTimeMillis(), currentDay = 1,
+                goalCurrent = 0f, completedTasksToday = 0, timesCompleted = challenge.timesCompleted + 1
+            )
+        )
+    }
+
     suspend fun incrementGoal(challengeId: String, delta: Float) {
         val challenge = habitDao.getChallengeById(challengeId) ?: return
         val newCurrent = (challenge.goalCurrent + delta).coerceAtLeast(0f)

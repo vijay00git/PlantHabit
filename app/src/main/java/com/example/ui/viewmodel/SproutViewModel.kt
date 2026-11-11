@@ -229,6 +229,21 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun finishChallenge(challengeId: String, keepHabits: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.finishChallenge(challengeId, keepHabits)
+            closeChallengeDetails()
+            refreshAnalytics()
+        }
+    }
+
+    fun restartChallenge(challengeId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.restartChallenge(challengeId)
+            closeChallengeDetails()
+        }
+    }
+
     fun logMood(score: Int, label: String) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.logMood(score, label)

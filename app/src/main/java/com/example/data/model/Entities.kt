@@ -146,6 +146,21 @@ data class ChallengeEntity(
     }
 }
 
+/** Whole calendar days since the user joined (0 on the start day). */
+fun ChallengeEntity.daysSinceStart(): Int {
+    if (startedAt <= 0) return 0
+    fun startOfDay(millis: Long) = java.util.Calendar.getInstance().apply {
+        timeInMillis = millis
+        set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+    }.timeInMillis
+    return ((startOfDay(System.currentTimeMillis()) - startOfDay(startedAt)) / (24L * 60 * 60 * 1000)).toInt()
+}
+
+/** Joined and either every day has passed or the goal target is reached. */
+fun ChallengeEntity.isFinished(): Boolean =
+    isJoined && ((startedAt > 0 && daysSinceStart() >= durationDays) || (goalTarget > 0f && goalCurrent >= goalTarget))
+
 @Entity(
     tableName = "mood_logs",
     indices = [Index(value = ["date"], unique = true)]
