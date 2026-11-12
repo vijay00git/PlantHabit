@@ -165,6 +165,14 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
     private val appPrefs = application.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
     val onboardingDone = MutableStateFlow(appPrefs.getBoolean("onboarding_done", false))
 
+    /** User's "Reduce motion" setting (the system's "remove animations" is applied on top). */
+    val reduceMotionSetting = MutableStateFlow(appPrefs.getBoolean("reduce_motion", false))
+
+    fun setReduceMotion(on: Boolean) {
+        appPrefs.edit().putBoolean("reduce_motion", on).apply()
+        reduceMotionSetting.value = on
+    }
+
     fun completeOnboarding(result: com.example.ui.screens.OnboardingResult) {
         appPrefs.edit().putBoolean("onboarding_done", true).apply()
         onboardingDone.value = true

@@ -125,8 +125,9 @@ fun Modifier.bounceClick(
 ): Modifier = composed {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
+    val reduce = LocalReduceMotion.current
     val scale by animateFloatAsState(
-        targetValue = if (pressed && enabled) pressedScale else 1f,
+        targetValue = if (pressed && enabled && !reduce) pressedScale else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
         label = "bounceScale"
     )
@@ -170,6 +171,7 @@ fun Modifier.bounceClick(
  * to stagger a list (each item starts ~45ms after the previous, capped).
  */
 fun Modifier.staggeredEntrance(index: Int = 0, offsetY: Dp = 24.dp): Modifier = composed {
+    if (LocalReduceMotion.current) return@composed Modifier
     var played by rememberSaveable { mutableStateOf(false) }
     val progress = remember { Animatable(if (played) 1f else 0f) }
     LaunchedEffect(Unit) {
@@ -273,7 +275,8 @@ fun EmptyState(
         modifier = modifier.fillMaxWidth().padding(vertical = 32.dp, horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        IconBubble(PlantTheme.colors.primarySoft, size = 88.dp, modifier = Modifier.graphicsLayer { translationY = dy }) {
+        val reduce = LocalReduceMotion.current
+        IconBubble(PlantTheme.colors.primarySoft, size = 88.dp, modifier = Modifier.graphicsLayer { translationY = if (reduce) 0f else dy }) {
             Text(emoji, style = androidx.compose.material3.MaterialTheme.typography.displaySmall)
         }
         Spacer(Modifier.height(16.dp))
@@ -383,6 +386,7 @@ fun CelebrationBurst(
     modifier: Modifier = Modifier,
     particleCount: Int = 26,
 ) {
+    if (LocalReduceMotion.current) return
     val c = PlantTheme.colors
     val palette = listOf(c.primary, c.sun, c.sunrise, c.berry, c.sky, c.lavender)
     val progress = remember { Animatable(1f) }

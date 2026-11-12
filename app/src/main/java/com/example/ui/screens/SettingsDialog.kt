@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
@@ -105,6 +106,8 @@ fun SettingsDialog(
     onRestore: () -> Unit = {},
     archivedHabits: List<com.example.data.model.HabitEntity> = emptyList(),
     onUnarchive: (com.example.data.model.HabitEntity) -> Unit = {},
+    reduceMotion: Boolean = false,
+    onReduceMotionChange: (Boolean) -> Unit = {},
 ) {
     var showArchived by remember { mutableStateOf(false) }
     if (showArchived) {
@@ -299,8 +302,28 @@ fun SettingsDialog(
                     )
                 }
 
+                // Accessibility
+                SettingsGroup(title = "ACCESSIBILITY", index = 3) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SettingsRowHeader(
+                            icon = Icons.Default.Accessibility,
+                            tint = c.sky,
+                            bubble = c.skySoft,
+                            title = "Reduce motion",
+                            subtitle = "Turn off confetti, swaying, zooming and list animations",
+                            modifier = Modifier.weight(1f)
+                        )
+                        androidx.compose.material3.Switch(
+                            checked = reduceMotion,
+                            onCheckedChange = onReduceMotionChange,
+                            colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = c.primary, checkedThumbColor = c.onPrimary),
+                            modifier = Modifier.testTag("switch_reduce_motion")
+                        )
+                    }
+                }
+
                 // Data
-                SettingsGroup(title = "YOUR DATA", index = 3) {
+                SettingsGroup(title = "YOUR DATA", index = 4) {
                     SettingsRowHeader(
                         icon = Icons.Default.CloudUpload,
                         tint = c.primary,

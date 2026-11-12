@@ -46,6 +46,7 @@ fun PlantStreakCard(
     activeStreakDays: Int,
     modifier: Modifier = Modifier
 ) {
+    val reduceMotionLocal = com.example.ui.components.LocalReduceMotion.current
     val c = PlantTheme.colors
 
     val progressRatio = if (totalCount > 0) (completedCount.toFloat() / totalCount).coerceIn(0f, 1f) else 0f
@@ -59,7 +60,7 @@ fun PlantStreakCard(
     // Plant grows with the streak (caps at 30 days) and sways gently in the breeze.
     val growth = (activeStreakDays.coerceIn(0, 30) / 30f)
     val plantSize by animateDpAsState(
-        targetValue = 44.dp + 28.dp * growth,
+        targetValue = 68.dp + 12.dp * growth, // the stage art itself shows growth
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "plant_size"
     )
@@ -101,7 +102,7 @@ fun PlantStreakCard(
                         .padding(bottom = 2.dp)
                         .size(plantSize)
                         .graphicsLayer {
-                            rotationZ = sway
+                            rotationZ = if (reduceMotionLocal) 0f else sway
                             transformOrigin = TransformOrigin(0.5f, 0.88f)
                         }
                 )

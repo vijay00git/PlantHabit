@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
@@ -237,6 +239,13 @@ fun HabitCard(
                     .border(1.dp, cardBorder, AppShapes.large)
                     .padding(14.dp)
                     .testTag("habit_card_${habit.id}")
+                    .semantics(mergeDescendants = true) {
+                        stateDescription = when {
+                            isDone -> "Done"
+                            isStepOrWater -> "%,d of %,d %s".format(currentProgress, target, habit.unit)
+                            else -> "Not done"
+                        }
+                    }
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

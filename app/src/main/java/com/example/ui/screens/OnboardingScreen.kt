@@ -270,6 +270,7 @@ fun OnboardingScreen(
 
 @Composable
 private fun WelcomeStep() {
+    val reduceMotionLocal = com.example.ui.components.LocalReduceMotion.current
     val c = PlantTheme.colors
     val sway = rememberInfiniteTransition(label = "welcomeSway")
     val angle by sway.animateFloat(-3f, 3f, infiniteRepeatable(tween(1800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "welcomeAngle")
@@ -280,7 +281,7 @@ private fun WelcomeStep() {
         modifier = Modifier
             .size(220.dp)
             .graphicsLayer {
-                rotationZ = angle
+                rotationZ = if (reduceMotionLocal) 0f else angle
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.88f)
             }
     )

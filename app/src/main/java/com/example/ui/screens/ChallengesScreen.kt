@@ -819,6 +819,7 @@ private fun FeaturedHeroCard(
     val c = PlantTheme.colors
     val banner = rememberBannerSource(challenge)
     // Slow "Ken Burns" drift so the artwork feels alive
+    val reduceMotion = com.example.ui.components.LocalReduceMotion.current
     val drift = rememberInfiniteTransition(label = "kenBurns")
     val zoom by drift.animateFloat(
         initialValue = 1f, targetValue = 1.12f,
@@ -836,7 +837,7 @@ private fun FeaturedHeroCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer { scaleX = zoom; scaleY = zoom }
+                .graphicsLayer { if (!reduceMotion) { scaleX = zoom; scaleY = zoom } }
         ) {
             if (banner != null) {
                 ChallengeBannerImage(source = banner, contentDescription = "${challenge.title} banner", modifier = Modifier.fillMaxSize())
@@ -944,6 +945,7 @@ private fun ChallengeTile(
     val accent = c.categoryColors(challenge.category)
     val banner = rememberBannerSource(challenge)
     // Each tile's icon floats on its own rhythm
+    val reduceMotion = com.example.ui.components.LocalReduceMotion.current
     val float = rememberInfiniteTransition(label = "tileFloat")
     val dy by float.animateFloat(
         initialValue = -3f, targetValue = 3f,
@@ -997,7 +999,7 @@ private fun ChallengeTile(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(12.dp)
-                    .graphicsLayer { translationY = dy.dp.toPx() }
+                    .graphicsLayer { if (!reduceMotion) translationY = dy.dp.toPx() }
                     .size(46.dp)
                     .clip(CircleShape)
                     .background(c.surface)

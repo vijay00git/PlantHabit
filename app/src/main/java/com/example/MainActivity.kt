@@ -76,7 +76,17 @@ class MainActivity : ComponentActivity() {
             val viewModel: SproutViewModel = viewModel()
             val themeMode by viewModel.themeMode.collectAsState()
 
+            val reduceSetting by viewModel.reduceMotionSetting.collectAsState()
+            // Also honour Android's "Remove animations" accessibility option
+            val systemNoAnimations = remember {
+                android.provider.Settings.Global.getFloat(
+                    contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+                ) == 0f
+            }
             PlantHabitTheme(themeMode = themeMode) {
+              androidx.compose.runtime.CompositionLocalProvider(
+                  com.example.ui.components.LocalReduceMotion provides (reduceSetting || systemNoAnimations)
+              ) {
                 // Keep status/nav bar icons readable when the in-app theme differs from the system's
                 val isDark = PlantTheme.colors.isDark
                 LaunchedEffect(isDark) {
@@ -85,6 +95,7 @@ class MainActivity : ComponentActivity() {
                     enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
                 }
                 SproutApp(viewModel = viewModel)
+              }
             }
         }
     }
@@ -119,6 +130,7 @@ fun SproutApp(viewModel: SproutViewModel) {
     val weeklyRecap by viewModel.weeklyRecap.collectAsState()
     val unlockedAchievements by viewModel.unlockedAchievements.collectAsState()
     val archivedHabits by viewModel.archivedHabits.collectAsState()
+    val reduceMotionSetting by viewModel.reduceMotionSetting.collectAsState()
     val calendars by viewModel.calendars.collectAsState()
     val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
     val targetCalendarId by viewModel.targetCalendarId.collectAsState()
@@ -649,6 +661,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                         backupLauncher.launch("PlantHabit-backup-$stamp.json")
                     },
                     archivedHabits = archivedHabits,
+                    reduceMotion = reduceMotionSetting,
+                    onReduceMotionChange = { viewModel.setReduceMotion(it) },
                     onUnarchive = { h ->
                         viewModel.setHabitArchived(h.id, false)
                         coroutineScope.launch { snackbarHostState.showSnackbar("'${h.title}' is back on Today 🌱") }

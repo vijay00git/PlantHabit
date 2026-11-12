@@ -727,6 +727,7 @@ private fun PlantGrowthHero(
     data: AnalyticsData,
     modifier: Modifier = Modifier
 ) {
+    val reduceMotionLocal = com.example.ui.components.LocalReduceMotion.current
     val c = PlantTheme.colors
     val onHero = c.onPrimary
 
@@ -821,7 +822,7 @@ private fun PlantGrowthHero(
                         modifier = Modifier
                             .size(84.dp)
                             .graphicsLayer {
-                                rotationZ = angle
+                                rotationZ = if (reduceMotionLocal) 0f else angle
                                 transformOrigin = TransformOrigin(0.5f, 0.88f)
                             }
                     )
