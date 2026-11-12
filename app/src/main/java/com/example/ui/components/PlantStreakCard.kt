@@ -95,18 +95,15 @@ fun PlantStreakCard(
                     .background(c.primarySoft),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.sprout_launcher_icon),
-                    contentDescription = "Sprout streak plant",
+                PlantStageImage(
+                    streakDays = activeStreakDays,
                     modifier = Modifier
-                        .padding(bottom = 6.dp)
+                        .padding(bottom = 2.dp)
                         .size(plantSize)
                         .graphicsLayer {
                             rotationZ = sway
-                            transformOrigin = TransformOrigin(0.5f, 1f)
+                            transformOrigin = TransformOrigin(0.5f, 0.88f)
                         }
-                        .clip(AppShapes.medium),
-                    contentScale = ContentScale.Crop
                 )
             }
 

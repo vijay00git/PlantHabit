@@ -8,7 +8,7 @@
     android:minResizeHeight="80dp"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
-    android:previewImage="@drawable/sprout_launcher_icon"
+    android:previewImage="@drawable/plant_stage_2"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />

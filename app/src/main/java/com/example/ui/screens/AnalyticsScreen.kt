@@ -816,16 +816,14 @@ private fun PlantGrowthHero(
                         .background(onHero.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.sprout_launcher_icon),
-                        contentDescription = "Sprout plant",
+                    com.example.ui.components.PlantStageImage(
+                        streakDays = streak,
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(84.dp)
                             .graphicsLayer {
                                 rotationZ = angle
-                                transformOrigin = TransformOrigin(0.5f, 1f)
+                                transformOrigin = TransformOrigin(0.5f, 0.88f)
                             }
-                            .clip(AppShapes.medium)
                     )
                 }
             }

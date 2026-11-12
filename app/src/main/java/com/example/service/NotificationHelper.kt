@@ -75,7 +75,7 @@ object NotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(com.example.R.drawable.ic_stat_plant)
             .setContentTitle(title)
             .setContentText(if (description.isNotBlank()) description else "Time to keep your streak alive! 🌱")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

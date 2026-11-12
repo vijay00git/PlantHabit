@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Monochrome sprout-in-pot for the status bar (notification small icon) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M11.25,13V9.6C9.1,9.9 6.6,8.9 5.6,5.9C8.5,5.1 10.6,6.6 11.25,8.4V7.2C11.25,4.6 13.2,2.3 16.8,2.6C17.1,6.1 14.9,8.1 12.75,8.3V13H17.5L16.4,20.2C16.3,20.9 15.7,21.4 15,21.4H9C8.3,21.4 7.7,20.9 7.6,20.2L6.5,13Z" />
+</vector>

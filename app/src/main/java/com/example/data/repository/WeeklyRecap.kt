@@ -126,7 +126,7 @@ object RecapScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val notification = NotificationCompat.Builder(context, NotificationHelper.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(com.example.R.drawable.ic_stat_plant)
             .setContentTitle("Your week: ${recap.completionPercent}% done 🌱")
             .setContentText("${recap.checkIns} check-ins · $trend$mood")
             .setStyle(NotificationCompat.BigTextStyle().bigText("${recap.checkIns} check-ins · $trend$mood$best"))
