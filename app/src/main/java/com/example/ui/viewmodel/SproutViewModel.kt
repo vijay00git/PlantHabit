@@ -198,6 +198,18 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.IO) { repository.saveHabitOrder(ids) }
     }
 
+    fun setHabitNote(habit: HabitEntity, date: String, note: String) {
+        viewModelScope.launch(Dispatchers.IO) { repository.setNote(habit, date, note) }
+    }
+
+    fun toggleSkip(habit: HabitEntity, date: String, onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val ok = repository.toggleSkip(habit, date)
+            refreshAnalytics()
+            onResult(ok)
+        }
+    }
+
     /** Habit whose minute timer is open (null = closed). */
     val timerHabit = MutableStateFlow<HabitWithStatus?>(null)
 

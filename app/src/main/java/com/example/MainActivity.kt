@@ -472,18 +472,28 @@ fun SproutApp(viewModel: SproutViewModel) {
                     LaunchedEffect(Unit) { viewModel.habitDetails.value = null }
                 } else {
                     val completedDates = remember(habitLogs) { habitLogs.filter { it.isCompleted }.map { it.date }.toSet() }
+                    val skippedDates = remember(habitLogs) { habitLogs.filter { it.isSkipped && !it.isCompleted }.map { it.date }.toSet() }
                     val todayStr = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
                     HabitDetailsSheet(
                         habit = habit,
                         logs = habitLogs,
-                        currentStreak = remember(habit, completedDates) { viewModel.repository.currentStreak(habit, completedDates, todayStr) },
-                        bestStreak = remember(habit, completedDates) { viewModel.repository.bestStreak(habit, completedDates) },
+                        currentStreak = remember(habit, completedDates) { viewModel.repository.currentStreak(habit, completedDates, todayStr, skippedDates) },
+                        bestStreak = remember(habit, completedDates) { viewModel.repository.bestStreak(habit, completedDates, skippedDates) },
                         onToggleDate = { date -> viewModel.toggleHabitOnDate(habit, date) },
                         onEdit = {
                             viewModel.habitDetails.value = null
                             viewModel.editingHabit.value = habit
                         },
                         onDismiss = { viewModel.habitDetails.value = null },
+                        onSaveNote = { date, note -> viewModel.setHabitNote(habit, date, note) },
+                        onToggleSkip = { date ->
+                            viewModel.toggleSkip(habit, date) { ok ->
+                                if (!ok) coroutineScope.launch { snackbarHostState.showSnackbar("No streak freezes left this month ❄️") }
+                            }
+                        },
+                        freezesLeft = remember(habitLogs) {
+                            (2 - habitLogs.count { it.isSkipped && it.date.take(7) == todayStr.take(7) }).coerceAtLeast(0)
+                        },
                         onArchive = {
                             viewModel.habitDetails.value = null
                             viewModel.setHabitArchived(habit.id, true)

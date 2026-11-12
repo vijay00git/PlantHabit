@@ -66,6 +66,8 @@ class HabitRepository(
             val logsMap = logs.associateBy { it.habitId }
             val completedByHabit = allLogs.filter { it.isCompleted }.groupBy({ it.habitId }, { it.date })
                 .mapValues { it.value.toSet() }
+            val skippedByHabit = allLogs.filter { it.isSkipped && !it.isCompleted }.groupBy({ it.habitId }, { it.date })
+                .mapValues { it.value.toSet() }
             val dayOfWeek = dayOfWeekOf(dateString)
             val thisWeek = weekDates(weekStartOf(dateString)).toSet()
             habits.filter { it.isScheduledOn(dayOfWeek) }.map { habit ->
@@ -77,7 +79,7 @@ class HabitRepository(
                     log = log,
                     currentProgress = currentProgress,
                     isCompleted = isCompleted,
-                    currentStreak = currentStreak(habit, completedByHabit[habit.id].orEmpty(), dateString),
+                    currentStreak = currentStreak(habit, completedByHabit[habit.id].orEmpty(), dateString, skippedByHabit[habit.id].orEmpty()),
                     weekDone = completedByHabit[habit.id].orEmpty().count { it in thisWeek }
                 )
             }
@@ -133,7 +135,7 @@ class HabitRepository(
         return streak
     }
 
-    fun currentStreak(habit: HabitEntity, completedDates: Set<String>, asOf: String): Int {
+    fun currentStreak(habit: HabitEntity, completedDates: Set<String>, asOf: String, skippedDates: Set<String> = emptySet()): Int {
         if (habit.timesPerWeek > 0) return weeklyStreak(habit, completedDates, asOf)
         val cal = Calendar.getInstance().apply { time = dateFormat.parse(asOf) ?: Date() }
         val createdDay = dateFormat.format(Date(habit.createdAt))
@@ -144,6 +146,7 @@ class HabitRepository(
             if (habit.isScheduledOn(cal.get(Calendar.DAY_OF_WEEK))) {
                 when {
                     d in completedDates -> streak++
+                    d in skippedDates -> Unit // streak freeze: neither counts nor breaks
                     i == 0 -> Unit // today/selected day still in progress
                     else -> return streak
                 }
@@ -154,7 +157,7 @@ class HabitRepository(
     }
 
     /** Longest run of consecutive scheduled days completed, ever. */
-    fun bestStreak(habit: HabitEntity, completedDates: Set<String>): Int {
+    fun bestStreak(habit: HabitEntity, completedDates: Set<String>, skippedDates: Set<String> = emptySet()): Int {
         if (completedDates.isEmpty()) return 0
         if (habit.timesPerWeek > 0) {
             // Longest run of weeks meeting the goal
@@ -176,7 +179,7 @@ class HabitRepository(
         while (dateFormat.format(cal.time) <= end) {
             val d = dateFormat.format(cal.time)
             if (habit.isScheduledOn(cal.get(Calendar.DAY_OF_WEEK))) {
-                if (d in completedDates) { run++; best = maxOf(best, run) } else if (d != end) run = 0
+                if (d in completedDates) { run++; best = maxOf(best, run) } else if (d != end && d !in skippedDates) run = 0
             }
             cal.add(Calendar.DAY_OF_YEAR, 1)
         }
@@ -309,6 +312,37 @@ class HabitRepository(
     suspend fun getAllHabitsOnce(): List<HabitEntity> = habitDao.getAllHabitsList()
 
     suspend fun getChallengeById(id: String): ChallengeEntity? = habitDao.getChallengeById(id)
+
+    /** Sets (or clears, with blank) the note on a habit's log for [date]. */
+    suspend fun setNote(habit: HabitEntity, date: String, note: String) {
+        val existing = habitDao.getLogForHabitAndDate(habit.id, date)
+        val text = note.trim().ifBlank { null }
+        habitDao.insertOrUpdateLog(
+            existing?.copy(notes = text) ?: HabitLogEntity(habitId = habit.id, date = date, notes = text)
+        )
+    }
+
+    /** Streak freezes allowed per habit per calendar month. */
+    val freezesPerMonth = 2
+
+    suspend fun freezesUsedInMonth(habitId: Long, date: String): Int =
+        habitDao.getLogsForHabit(habitId).count { it.isSkipped && it.date.take(7) == date.take(7) }
+
+    /**
+     * Toggles a streak freeze for [date]. Returns false if not allowed (already done, or no
+     * freezes left this month).
+     */
+    suspend fun toggleSkip(habit: HabitEntity, date: String): Boolean {
+        val existing = habitDao.getLogForHabitAndDate(habit.id, date)
+        if (existing?.isCompleted == true) return false
+        val skipping = existing?.isSkipped != true
+        if (skipping && freezesUsedInMonth(habit.id, date) >= freezesPerMonth) return false
+        habitDao.insertOrUpdateLog(
+            existing?.copy(isSkipped = skipping) ?: HabitLogEntity(habitId = habit.id, date = date, isSkipped = true)
+        )
+        PlantHabitWidget.refresh(context)
+        return true
+    }
 
     suspend fun saveHabitOrder(ids: List<Long>) {
         ids.forEachIndexed { index, id ->

@@ -306,6 +306,7 @@ fun HabitCard(
                         } else {
                             when {
                                 isDone -> "Completed · nice work!"
+                                habitWithStatus.log?.isSkipped == true -> "❄️ Skipped today · streak safe"
                                 habitWithStatus.weeklyGoalMet -> "Weekly goal met ✓ · ${habitWithStatus.weekDone}/${habit.timesPerWeek} this week"
                                 habitWithStatus.isWeekly -> "${habitWithStatus.weekDone}/${habit.timesPerWeek} this week · tap to log"
                                 else -> habit.scheduleLabel().let { if (it == "Every day") "Tap or swipe → to complete" else "$it · tap to complete" }

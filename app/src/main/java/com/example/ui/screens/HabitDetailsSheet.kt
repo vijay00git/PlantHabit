@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -84,7 +85,19 @@ fun HabitDetailsSheet(
     onEdit: () -> Unit,
     onDismiss: () -> Unit,
     onArchive: () -> Unit = {},
+    onSaveNote: (date: String, note: String) -> Unit = { _, _ -> },
+    onToggleSkip: (date: String) -> Unit = {},
+    freezesLeft: Int = 2,
 ) {
+    var noteDate by remember { mutableStateOf<String?>(null) }
+    noteDate?.let { d ->
+        NoteDialog(
+            date = d,
+            initial = logs.firstOrNull { it.date == d }?.notes.orEmpty(),
+            onSave = { text -> onSaveNote(d, text); noteDate = null },
+            onDismiss = { noteDate = null }
+        )
+    }
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
     val icon = AppIcon.of(habit.iconName)
@@ -170,6 +183,29 @@ fun HabitDetailsSheet(
                 StatTile("📈", rate, "%", "Last 30 days", AccentPair(c.sky, c.skySoft), Modifier.weight(1f))
             }
 
+            // Today: note + streak freeze
+            val todayLog = logs.firstOrNull { it.date == today }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ActionPill(
+                    text = if (todayLog?.notes.isNullOrBlank()) "📝 Add note" else "📝 Edit today's note",
+                    bg = c.lavenderSoft, fg = c.lavender,
+                    modifier = Modifier.weight(1f).testTag("btn_add_note")
+                ) { noteDate = today }
+                val skipped = todayLog?.isSkipped == true
+                val canSkip = todayLog?.isCompleted != true && (skipped || freezesLeft > 0)
+                ActionPill(
+                    text = if (skipped) "❄️ Undo skip" else "❄️ Skip today",
+                    bg = if (canSkip) c.skySoft else c.cardMuted, fg = if (canSkip) c.sky else c.textMuted,
+                    modifier = Modifier.weight(1f).testTag("btn_skip_today"),
+                    enabled = canSkip
+                ) { onToggleSkip(today) }
+            }
+            Text(
+                "❄️ $freezesLeft of 2 streak freezes left this month · a skipped day keeps your streak safe",
+                style = MaterialTheme.typography.bodySmall,
+                color = c.textMuted
+            )
+
             // History calendar
             PlantCard(modifier = Modifier.fillMaxWidth(), contentPadding = 14.dp) {
                 var monthOffset by remember { mutableIntStateOf(0) }
@@ -213,6 +249,7 @@ fun HabitDetailsSheet(
                         logsByDate = logsByDate,
                         today = today,
                         accent = accent,
+                        onLongPress = { date -> noteDate = date },
                         onToggle = { date ->
                             haptics.tick()
                             onToggleDate(date)
@@ -226,13 +263,38 @@ fun HabitDetailsSheet(
                     Legend(accent.color, "Done")
                     Legend(accent.soft, "Partly")
                     Legend(c.berrySoft, "Missed")
+                    Legend(c.skySoft, "❄️ Skipped")
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "Tap a day to fill in or undo a check-in.",
+                    "Tap a day to fill in or undo a check-in · long-press to add a note.",
                     style = MaterialTheme.typography.bodySmall,
                     color = c.textMuted
                 )
+            }
+
+            // Recent notes
+            val notes = logs.filter { !it.notes.isNullOrBlank() }.sortedByDescending { it.date }.take(6)
+            if (notes.isNotEmpty()) {
+                Text("NOTES", style = MaterialTheme.typography.labelMedium, color = c.textMuted)
+                notes.forEach { log ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(AppShapes.medium)
+                            .background(c.card)
+                            .bounceClick(pressedScale = 0.98f) { noteDate = log.date }
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            prettyDate(log.date),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = c.lavender,
+                            modifier = Modifier.width(72.dp)
+                        )
+                        Text(log.notes.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = c.textPrimary)
+                    }
+                }
             }
         }
     }
@@ -246,6 +308,7 @@ private fun MonthGrid(
     today: String,
     accent: AccentPair,
     onToggle: (String) -> Unit,
+    onLongPress: (String) -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val created = (listOf(dayFmt.format(Date(habit.createdAt))) + logsByDate.filterValues { it.isCompleted }.keys).min()
@@ -283,10 +346,12 @@ private fun MonthGrid(
                             val partial = !done && (log?.progressValue ?: 0) > 0
                             val future = date > today
                             val beforeHabit = date < created
-                            val missed = scheduled && !done && !partial && !future && !beforeHabit && date != today
+                            val skipped = !done && log?.isSkipped == true
+                            val missed = scheduled && !done && !partial && !skipped && !future && !beforeHabit && date != today
                             val bg by animateColorAsState(
                                 when {
                                     done -> accent.color
+                                    skipped -> c.skySoft
                                     partial -> accent.soft
                                     missed -> c.berrySoft
                                     scheduled && !future -> c.cardMuted
@@ -307,11 +372,24 @@ private fun MonthGrid(
                                     .clip(CircleShape)
                                     .background(bg)
                                     .then(if (date == today) Modifier.border(2.dp, c.primary, CircleShape) else Modifier)
-                                    .bounceClick(enabled = !future, pressedScale = 0.85f, haptic = false) { onToggle(date) }
+                                    .bounceClick(
+                                        enabled = !future, pressedScale = 0.85f, haptic = false,
+                                        onLongClick = { onLongPress(date) }
+                                    ) { onToggle(date) }
                                     .testTag("history_day_$date"),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("$day", style = MaterialTheme.typography.labelMedium, color = fg)
+                                Text(if (skipped) "❄️" else "$day", style = MaterialTheme.typography.labelMedium, color = fg)
+                                if (!log?.notes.isNullOrBlank()) {
+                                    Box(
+                                        Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 4.dp)
+                                            .size(5.dp)
+                                            .clip(CircleShape)
+                                            .background(if (done) c.onAccent else c.lavender)
+                                    )
+                                }
                             }
                         }
                     }
@@ -371,4 +449,62 @@ private fun HeaderButton(
     ) {
         Icon(icon, contentDescription = description, tint = tint, modifier = Modifier.size(20.dp))
     }
+}
+
+
+private fun prettyDate(date: String): String = try {
+    SimpleDateFormat("d MMM", Locale.getDefault()).format(dayFmt.parse(date)!!)
+} catch (e: Exception) { date }
+
+@Composable
+private fun ActionPill(
+    text: String,
+    bg: Color,
+    fg: Color,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .clip(AppShapes.pill)
+            .background(bg)
+            .bounceClick(enabled = enabled, onClick = onClick)
+            .padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, color = fg)
+    }
+}
+
+@Composable
+private fun NoteDialog(date: String, initial: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
+    val c = PlantTheme.colors
+    var text by remember { mutableStateOf(initial) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = c.surface,
+        shape = AppShapes.xl,
+        title = { Text("Note · ${prettyDate(date)}", style = MaterialTheme.typography.titleLarge, color = c.textPrimary) },
+        text = {
+            androidx.compose.material3.OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.take(300) },
+                placeholder = { Text("How did it go?") },
+                minLines = 3,
+                shape = AppShapes.medium,
+                modifier = Modifier.fillMaxWidth().testTag("input_note")
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { onSave(text) }, modifier = Modifier.testTag("btn_save_note")) {
+                Text("Save", style = MaterialTheme.typography.labelLarge, color = c.primary)
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text("Cancel", style = MaterialTheme.typography.labelLarge, color = c.textSecondary)
+            }
+        }
+    )
 }
