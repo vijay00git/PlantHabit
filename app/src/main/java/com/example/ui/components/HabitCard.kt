@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleOut
@@ -75,6 +76,8 @@ fun HabitCard(
     modifier: Modifier = Modifier,
     /** Long-press or swipe left: open the habit's details / editor. */
     onOpenDetails: () -> Unit = {},
+    /** Minute-based habits: start the built-in timer. */
+    onStartTimer: (() -> Unit)? = null,
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
@@ -335,6 +338,22 @@ fun HabitCard(
                         }
                     }
 
+                    val isMinutes = habit.unit.trim().lowercase() in listOf("mins", "min", "minutes")
+                    if (isMinutes && !isDone && onStartTimer != null) {
+                        // Built-in timer
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 10.dp)
+                                .size(40.dp)
+                                .bounceClick(pressedScale = 0.88f) { onStartTimer() }
+                                .clip(CircleShape)
+                                .background(accent.color)
+                                .testTag("btn_timer_${habit.id}"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Start ${habit.targetValue}-minute timer", tint = c.onAccent, modifier = Modifier.size(24.dp))
+                        }
+                    }
                     if (isStepOrWater && !isDone) {
                         // Quick add pill
                         Box(

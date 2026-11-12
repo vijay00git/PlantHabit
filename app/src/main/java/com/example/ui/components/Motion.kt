@@ -67,6 +67,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
+/** True when the user asked for less motion (setting or system "remove animations"). */
+val LocalReduceMotion = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 /* ------------------------------------------------------------------------------------------ */
 /* Haptics                                                                                      */
 /* ------------------------------------------------------------------------------------------ */

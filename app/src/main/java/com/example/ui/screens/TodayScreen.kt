@@ -103,6 +103,7 @@ fun TodayScreen(
     layout: TodayLayout = TodayLayout(),
     onLayoutChange: (TodayLayout) -> Unit = {},
     onSaveHabitOrder: (List<Long>) -> Unit = {},
+    onStartTimer: (HabitWithStatus) -> Unit = {},
 ) {
     val c = PlantTheme.colors
 
@@ -364,7 +365,8 @@ fun TodayScreen(
                         habitWithStatus = habitWithStatus,
                         onToggleCompleted = { onToggleHabit(habitWithStatus) },
                         onIncrement = { amount -> onIncrementHabit(habitWithStatus, amount) },
-                        onOpenDetails = { onOpenHabitDetails(habitWithStatus.habit) }
+                        onOpenDetails = { onOpenHabitDetails(habitWithStatus.habit) },
+                        onStartTimer = { onStartTimer(habitWithStatus) }
                     )
                 }
             }

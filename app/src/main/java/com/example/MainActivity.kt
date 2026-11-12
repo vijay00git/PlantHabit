@@ -113,6 +113,7 @@ fun SproutApp(viewModel: SproutViewModel) {
     val editingHabit by viewModel.editingHabit.collectAsState()
     val detailsHabit by viewModel.habitDetails.collectAsState()
     val todayLayout by viewModel.todayLayout.collectAsState()
+    val timerHabit by viewModel.timerHabit.collectAsState()
     val archivedHabits by viewModel.archivedHabits.collectAsState()
     val calendars by viewModel.calendars.collectAsState()
     val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
@@ -294,7 +295,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                         onOpenChallengeDetails = { viewModel.openChallengeDetails(it) },
                         layout = todayLayout,
                         onLayoutChange = { viewModel.setTodayLayout(it) },
-                        onSaveHabitOrder = { viewModel.saveHabitOrder(it) }
+                        onSaveHabitOrder = { viewModel.saveHabitOrder(it) },
+                        onStartTimer = { viewModel.timerHabit.value = it }
                     )
                 }
 
@@ -446,6 +448,16 @@ fun SproutApp(viewModel: SproutViewModel) {
                     activeHabits = habitsWithStatus.filter { !it.isCompleted },
                     onCompleteHabit = { viewModel.toggleHabitCompleted(it.habit) },
                     onDismiss = { viewModel.isFocusModeOpen.value = false }
+                )
+            }
+
+            // Built-in timer for minute-based habits
+            timerHabit?.let { h ->
+                com.example.ui.screens.HabitTimerDialog(
+                    habit = h,
+                    reduceMotion = com.example.ui.components.LocalReduceMotion.current,
+                    onLogMinutes = { minutes -> viewModel.incrementHabitProgress(h.habit, minutes) },
+                    onDismiss = { viewModel.timerHabit.value = null }
                 )
             }
 

@@ -198,6 +198,9 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.IO) { repository.saveHabitOrder(ids) }
     }
 
+    /** Habit whose minute timer is open (null = closed). */
+    val timerHabit = MutableStateFlow<HabitWithStatus?>(null)
+
     /** Habit whose details/history sheet is open (null = closed). */
     val habitDetails = MutableStateFlow<HabitEntity?>(null)
 
