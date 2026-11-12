@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+    <style name="Theme.PlantHabit" parent="android:Theme.DeviceDefault.NoActionBar">
         <!-- Launch screen on older Android; Compose draws over it once ready -->
         <item name="android:windowBackground">@drawable/splash_window</item>
     </style>

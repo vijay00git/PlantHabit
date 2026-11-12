@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Challenge banners are looked up by name (Resources.getIdentifier), so the resource
+     shrinker can't see them being used — keep them explicitly. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/banner_*,@drawable/challenge_gratitude,@drawable/routine_morning" />
