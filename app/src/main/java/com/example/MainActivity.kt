@@ -340,7 +340,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                         habits = allHabits,
                         logs = allLogs,
                         onOpenSettings = { viewModel.isSettingsOpen.value = true },
-                        onOpenHabit = { viewModel.habitDetails.value = it }
+                        onOpenHabit = { viewModel.habitDetails.value = it },
+                        moods = moodLogs
                     )
                 }
 
