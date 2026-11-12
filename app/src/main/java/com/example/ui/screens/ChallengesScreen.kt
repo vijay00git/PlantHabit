@@ -212,7 +212,11 @@ fun ChallengesScreen(
             onToggleFavorite = { onToggleFavorite(ch) },
             onMoveToGroup = { actionTarget = null; groupTarget = ch },
             onShare = { onShare(ch) },
-            onDelete = { actionTarget = null; deleteTarget = ch },
+            onDelete = {
+                actionTarget = null
+                // Built-ins are only hidden (undoable); imported ones are deleted for good, so confirm
+                if (com.example.data.local.BuiltInChallenges.isBuiltIn(ch.id)) onDelete(ch) else deleteTarget = ch
+            },
             onDismiss = { actionTarget = null }
         )
     }

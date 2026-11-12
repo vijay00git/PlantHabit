@@ -252,9 +252,19 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun deleteHabit(habitId: Long) {
+    /** Deletes a habit; [onDeleted] receives a snapshot for Undo. */
+    fun deleteHabit(habitId: Long, onDeleted: (HabitRepository.HabitSnapshot?) -> Unit = {}) {
         viewModelScope.launch(Dispatchers.IO) {
+            val snapshot = repository.snapshotHabit(habitId)
             repository.deleteHabit(habitId)
+            refreshAnalytics()
+            onDeleted(snapshot)
+        }
+    }
+
+    fun restoreHabit(snapshot: HabitRepository.HabitSnapshot) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.restoreHabit(snapshot)
             refreshAnalytics()
         }
     }

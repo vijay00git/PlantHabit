@@ -293,6 +293,22 @@ class HabitRepository(
         return habits.size
     }
 
+    /** Everything needed to bring a deleted habit back (Undo). */
+    data class HabitSnapshot(val habit: HabitEntity, val logs: List<HabitLogEntity>)
+
+    suspend fun snapshotHabit(habitId: Long): HabitSnapshot? =
+        habitDao.getHabitById(habitId)?.let { HabitSnapshot(it, habitDao.getLogsForHabit(habitId)) }
+
+    /** Re-inserts a deleted habit with its history, reminders and calendar event. */
+    suspend fun restoreHabit(snapshot: HabitSnapshot) {
+        val habit = snapshot.habit.copy(calendarEventId = null)
+        habitDao.insertHabit(habit)
+        snapshot.logs.forEach { habitDao.insertOrUpdateLog(it) }
+        if (habit.reminderEnabled) ReminderScheduler.scheduleHabitReminder(context, habit)
+        syncCalendarEvent(habit)
+        PlantHabitWidget.refresh(context)
+    }
+
     suspend fun deleteHabit(habitId: Long) {
         ReminderScheduler.cancelHabitReminder(context, habitId)
         CalendarSyncManager.deleteHabitEvent(context, habitDao.getHabitById(habitId)?.calendarEventId)

@@ -542,7 +542,10 @@ fun CreateHabitDialog(
                         .height(48.dp)
                         .clip(AppShapes.medium)
                         .background(c.berrySoft)
-                        .bounceClick { confirmDelete = true }
+                        .bounceClick {
+                            haptics.reject()
+                            scope.launch { sheetState.hide() }.invokeOnCompletion { onDelete() }
+                        }
                         .testTag("btn_delete_habit"),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically

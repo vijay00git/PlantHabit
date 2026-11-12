@@ -61,6 +61,7 @@ import com.example.ui.theme.PlantHabitTheme
 import com.example.ui.theme.PlantTheme
 import com.example.ui.viewmodel.BottomTab
 import com.example.ui.viewmodel.SproutViewModel
+import com.example.data.repository.HabitRepository
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -373,7 +374,17 @@ fun SproutApp(viewModel: SproutViewModel) {
                             context.startActivity(android.content.Intent.createChooser(send, "Share challenge"))
                         },
                         onDelete = { ch ->
-                            viewModel.deleteChallenge(ch) { msg -> coroutineScope.launch { snackbarHostState.showSnackbar(msg) } }
+                            viewModel.deleteChallenge(ch) { msg ->
+                                coroutineScope.launch {
+                                    val builtIn = com.example.data.local.BuiltInChallenges.isBuiltIn(ch.id)
+                                    val result = snackbarHostState.showSnackbar(
+                                        if (builtIn) "Hid '${ch.title}'" else msg,
+                                        actionLabel = if (builtIn) "Undo" else null,
+                                        duration = androidx.compose.material3.SnackbarDuration.Long
+                                    )
+                                    if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) viewModel.unhideChallenge(ch.id)
+                                }
+                            }
                         },
                         onUnhide = { ch ->
                             viewModel.unhideChallenge(ch.id)
@@ -484,9 +495,18 @@ fun SproutApp(viewModel: SproutViewModel) {
                     },
                     onDelete = editing?.let { habit ->
                         {
-                            viewModel.deleteHabit(habit.id)
                             viewModel.editingHabit.value = null
-                            coroutineScope.launch { snackbarHostState.showSnackbar("Deleted '${habit.title}'") }
+                            viewModel.deleteHabit(habit.id) { snapshot ->
+                                coroutineScope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        "Deleted '${habit.title}'", actionLabel = "Undo",
+                                        duration = androidx.compose.material3.SnackbarDuration.Long
+                                    )
+                                    if (result == androidx.compose.material3.SnackbarResult.ActionPerformed && snapshot != null) {
+                                        viewModel.restoreHabit(snapshot)
+                                    }
+                                }
+                            }
                         }
                     }
                 )
