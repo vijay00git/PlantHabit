@@ -160,6 +160,31 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    // ---- Onboarding ----
+    private val appPrefs = application.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+    val onboardingDone = MutableStateFlow(appPrefs.getBoolean("onboarding_done", false))
+
+    fun completeOnboarding(result: com.example.ui.screens.OnboardingResult) {
+        appPrefs.edit().putBoolean("onboarding_done", true).apply()
+        onboardingDone.value = true
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!result.keepExamples) repository.resetAllData()
+            result.goals.forEach { g ->
+                repository.createHabit(
+                    HabitEntity(
+                        title = g.habitTitle, category = g.category, timeOfDay = g.timeOfDay,
+                        scheduledTime = g.time, targetValue = g.target, unit = g.unit,
+                        iconName = g.icon.key, reminderEnabled = true, reminderTime = g.time
+                    )
+                )
+            }
+            result.challengeId?.let { id ->
+                repository.getChallengeById(id)?.let { if (!it.isJoined) repository.acceptChallenge(it) }
+            }
+            refreshAnalytics()
+        }
+    }
+
     // ---- Today layout & habit order ----
     val todayLayout = MutableStateFlow(com.example.ui.screens.TodayLayout.load(application))
 

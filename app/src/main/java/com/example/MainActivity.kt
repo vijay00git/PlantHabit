@@ -176,6 +176,27 @@ fun SproutApp(viewModel: SproutViewModel) {
         }
     }
 
+    // First run: onboarding (it asks for notifications itself)
+    val onboardingDone by viewModel.onboardingDone.collectAsState()
+    if (!onboardingDone) {
+        com.example.ui.screens.OnboardingScreen(
+            challenges = challenges,
+            // Updated (not freshly installed) apps already hold the user's own data
+            hasExistingHabits = remember {
+                val ctx = viewModel.getApplication<android.app.Application>()
+                val info = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
+                info.firstInstallTime != info.lastUpdateTime
+            },
+            onRequestNotifications = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+            onFinish = { viewModel.completeOnboarding(it) }
+        )
+        return
+    }
+
     // Auto-request notifications on Android 13+
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

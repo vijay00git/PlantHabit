@@ -271,6 +271,8 @@ class HabitRepository(
 
     suspend fun getAllHabitsOnce(): List<HabitEntity> = habitDao.getAllHabitsList()
 
+    suspend fun getChallengeById(id: String): ChallengeEntity? = habitDao.getChallengeById(id)
+
     suspend fun saveHabitOrder(ids: List<Long>) {
         ids.forEachIndexed { index, id ->
             habitDao.getHabitById(id)?.let { if (it.sortOrder != index + 1) habitDao.updateHabit(it.copy(sortOrder = index + 1)) }
