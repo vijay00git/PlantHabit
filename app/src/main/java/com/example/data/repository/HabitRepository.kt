@@ -271,6 +271,13 @@ class HabitRepository(
 
     suspend fun getAllHabitsOnce(): List<HabitEntity> = habitDao.getAllHabitsList()
 
+    suspend fun saveHabitOrder(ids: List<Long>) {
+        ids.forEachIndexed { index, id ->
+            habitDao.getHabitById(id)?.let { if (it.sortOrder != index + 1) habitDao.updateHabit(it.copy(sortOrder = index + 1)) }
+        }
+        PlantHabitWidget.refresh(context)
+    }
+
     fun logsForHabit(habitId: Long): Flow<List<HabitLogEntity>> = habitDao.getLogsForHabitFlow(habitId)
 
     /** Live copy of one habit (null once deleted). */

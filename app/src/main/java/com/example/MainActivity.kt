@@ -111,6 +111,7 @@ fun SproutApp(viewModel: SproutViewModel) {
     val isCreateHabitOpen by viewModel.isCreateHabitOpen.collectAsState()
     val editingHabit by viewModel.editingHabit.collectAsState()
     val detailsHabit by viewModel.habitDetails.collectAsState()
+    val todayLayout by viewModel.todayLayout.collectAsState()
     val calendars by viewModel.calendars.collectAsState()
     val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
     val targetCalendarId by viewModel.targetCalendarId.collectAsState()
@@ -267,7 +268,10 @@ fun SproutApp(viewModel: SproutViewModel) {
                                 snackbarHostState.showSnackbar("Added +${delta.toInt()} to goal progress! 🎯")
                             }
                         },
-                        onOpenChallengeDetails = { viewModel.openChallengeDetails(it) }
+                        onOpenChallengeDetails = { viewModel.openChallengeDetails(it) },
+                        layout = todayLayout,
+                        onLayoutChange = { viewModel.setTodayLayout(it) },
+                        onSaveHabitOrder = { viewModel.saveHabitOrder(it) }
                     )
                 }
 

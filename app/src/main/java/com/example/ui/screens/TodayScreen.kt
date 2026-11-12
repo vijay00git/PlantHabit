@@ -1,5 +1,15 @@
 package com.example.ui.screens
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -89,7 +99,10 @@ fun TodayScreen(
     moodGoodPercent: Int? = null,
     onIncrementGoal: (String, Float) -> Unit = { _, _ -> },
     onOpenChallengeDetails: (ChallengeEntity) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    layout: TodayLayout = TodayLayout(),
+    onLayoutChange: (TodayLayout) -> Unit = {},
+    onSaveHabitOrder: (List<Long>) -> Unit = {},
 ) {
     val c = PlantTheme.colors
 
@@ -127,12 +140,16 @@ fun TodayScreen(
     val totalCount = habitsWithStatus.size
     val joinedGoals = goalChallenges.filter { it.isJoined && it.goalTarget > 0 }
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(c.background),
-        contentPadding = PaddingValues(bottom = 96.dp)
-    ) {
+    var reorderMode by rememberSaveable { mutableStateOf(false) }
+    var reorderList by remember(standaloneHabits.map { it.habit.id }, reorderMode) {
+        mutableStateOf(standaloneHabits.map { it.habit })
+    }
+    var customizing by remember { mutableStateOf(false) }
+    if (customizing) {
+        CustomizeTodaySheet(layout = layout, onChange = onLayoutChange, onDismiss = { customizing = false })
+    }
+
+    val headerSection: LazyListScope.() -> Unit = {
         // Top Header over a soft green glow
         item(key = "header") {
             Column(
@@ -205,89 +222,10 @@ fun TodayScreen(
             }
         }
 
-        // Plant Streak Card
-        item(key = "plant_streak") {
-            Box(
-                modifier = Modifier
-                    .animateItem()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .staggeredEntrance(3)
-            ) {
-                PlantStreakCard(
-                    completedCount = completedCount,
-                    totalCount = totalCount,
-                    activeStreakDays = activeStreakDays
-                )
-            }
-        }
 
-        // Active Goal Counter Cards
-        itemsIndexed(joinedGoals, key = { _, goal -> "goal_${goal.id}" }) { index, goalChallenge ->
-            Box(
-                modifier = Modifier
-                    .animateItem()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .staggeredEntrance(4 + index)
-            ) {
-                GoalCounterCard(
-                    goalChallenge = goalChallenge,
-                    onIncrement = { delta -> onIncrementGoal(goalChallenge.id, delta) },
-                    onClickDetails = { onOpenChallengeDetails(goalChallenge) }
-                )
-            }
-        }
+    }
 
-        // One routine card per group (a joined challenge or a named routine)
-        routineHabits.groupBy { it.habit.routineGroup!! }.forEach { (group, groupHabits) ->
-            val linked = goalChallenges.firstOrNull { ch ->
-                ch.isJoined && (groupHabits.any { it.habit.challengeId == ch.id } || ch.title == group)
-            }
-            item(key = "routine_$group") {
-                Box(
-                    modifier = Modifier
-                        .animateItem()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .staggeredEntrance(5)
-                ) {
-                    RoutineCard(
-                        title = group,
-                        dayProgressText = linked?.let { "Day ${it.currentDay} of ${it.durationDays}" } ?: "Daily routine",
-                        routineHabits = groupHabits,
-                        onToggleHabit = onToggleHabit,
-                        challenge = linked
-                    )
-                }
-            }
-        }
-
-        // Daily Mood Tracker Card
-        item(key = "mood") {
-            Box(
-                modifier = Modifier
-                    .animateItem()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .staggeredEntrance(6)
-            ) {
-                MoodTrackerCard(
-                    currentMood = currentMood,
-                    onSelectMood = onSelectMood,
-                    goodPercent = moodGoodPercent
-                )
-            }
-        }
-
-        // Focus & Flow card
-        item(key = "focus") {
-            Box(
-                modifier = Modifier
-                    .animateItem()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .staggeredEntrance(7)
-            ) {
-                FocusCard(onOpenFocusMode = onOpenFocusMode)
-            }
-        }
-
+    val habitsSection: LazyListScope.() -> Unit = {
         // Filter Pills (ALL, MORNING, AFTERNOON, EVENING)
         item(key = "filters") {
             val filters = listOf("ALL", "MORNING", "AFTERNOON", "EVENING")
@@ -318,17 +256,53 @@ fun TodayScreen(
                     .animateItem()
                     .padding(horizontal = 20.dp, vertical = 6.dp),
                 action = {
-                    Box(
-                        modifier = Modifier
-                            .clip(AppShapes.pill)
-                            .background(c.primarySoft)
-                            .padding(horizontal = 10.dp, vertical = 3.dp)
-                    ) {
-                        AnimatedCounter(
-                            value = filteredHabits.size,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = c.primary
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (reorderMode) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(AppShapes.pill)
+                                    .background(c.primary)
+                                    .bounceClick {
+                                        onSaveHabitOrder(reorderList.map { it.id })
+                                        reorderMode = false
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 5.dp)
+                                    .testTag("btn_reorder_done")
+                            ) {
+                                Text("Done", style = MaterialTheme.typography.labelLarge, color = c.onPrimary)
+                            }
+                        } else {
+                            if (standaloneHabits.size > 1) {
+                                Row(
+                                    modifier = Modifier
+                                        .clip(AppShapes.pill)
+                                        .bounceClick {
+                                            onFilterSelected("ALL")
+                                            reorderMode = true
+                                        }
+                                        .background(c.cardMuted)
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        .testTag("btn_reorder"),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.SwapVert, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Reorder", style = MaterialTheme.typography.labelMedium, color = c.textSecondary)
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(AppShapes.pill)
+                                    .background(c.primarySoft)
+                                    .padding(horizontal = 10.dp, vertical = 3.dp)
+                            ) {
+                                AnimatedCounter(
+                                    value = filteredHabits.size,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = c.primary
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -351,21 +325,201 @@ fun TodayScreen(
             }
         }
 
-        // Habits List
-        itemsIndexed(filteredHabits, key = { _, h -> "habit_${h.habit.id}" }) { index, habitWithStatus ->
-            Box(
+
+        if (reorderMode) {
+            itemsIndexed(reorderList, key = { _, h -> "reorder_${h.id}" }) { index, h ->
+                val icon = com.example.ui.components.AppIcon.of(h.iconName)
+                Row(
+                    modifier = Modifier
+                        .animateItem()
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .clip(AppShapes.medium)
+                        .background(c.card)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(icon.vector, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text(h.title, style = MaterialTheme.typography.bodyLarge, color = c.textPrimary, modifier = Modifier.weight(1f))
+                    MoveButton(Icons.Default.KeyboardArrowUp, "Move up", enabled = index > 0) {
+                        reorderList = reorderList.swap(index, index - 1)
+                    }
+                    MoveButton(Icons.Default.KeyboardArrowDown, "Move down", enabled = index < reorderList.lastIndex) {
+                        reorderList = reorderList.swap(index, index + 1)
+                    }
+                }
+            }
+        } else {
+            // Habits List
+            itemsIndexed(filteredHabits, key = { _, h -> "habit_${h.habit.id}" }) { index, habitWithStatus ->
+                Box(
+                    modifier = Modifier
+                        .animateItem()
+                        .padding(horizontal = 16.dp, vertical = 5.dp)
+                        .staggeredEntrance(index)
+                ) {
+                    HabitCard(
+                        habitWithStatus = habitWithStatus,
+                        onToggleCompleted = { onToggleHabit(habitWithStatus) },
+                        onIncrement = { amount -> onIncrementHabit(habitWithStatus, amount) },
+                        onOpenDetails = { onOpenHabitDetails(habitWithStatus.habit) }
+                    )
+                }
+            }
+
+        }
+    }
+
+    val cardsSection: LazyListScope.() -> Unit = {
+        layout.visible.forEach { card ->
+            when (card) {
+                TodayCard.STREAK -> {
+                // Plant Streak Card
+                item(key = "plant_streak") {
+                    Box(
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .staggeredEntrance(3)
+                    ) {
+                        PlantStreakCard(
+                            completedCount = completedCount,
+                            totalCount = totalCount,
+                            activeStreakDays = activeStreakDays
+                        )
+                    }
+                }
+
+
+                }
+                TodayCard.GOALS -> {
+                // Active Goal Counter Cards
+                itemsIndexed(joinedGoals, key = { _, goal -> "goal_${goal.id}" }) { index, goalChallenge ->
+                    Box(
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .staggeredEntrance(4 + index)
+                    ) {
+                        GoalCounterCard(
+                            goalChallenge = goalChallenge,
+                            onIncrement = { delta -> onIncrementGoal(goalChallenge.id, delta) },
+                            onClickDetails = { onOpenChallengeDetails(goalChallenge) }
+                        )
+                    }
+                }
+
+
+                }
+                TodayCard.ROUTINES -> {
+                // One routine card per group (a joined challenge or a named routine)
+                routineHabits.groupBy { it.habit.routineGroup!! }.forEach { (group, groupHabits) ->
+                    val linked = goalChallenges.firstOrNull { ch ->
+                        ch.isJoined && (groupHabits.any { it.habit.challengeId == ch.id } || ch.title == group)
+                    }
+                    item(key = "routine_$group") {
+                        Box(
+                            modifier = Modifier
+                                .animateItem()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .staggeredEntrance(5)
+                        ) {
+                            RoutineCard(
+                                title = group,
+                                dayProgressText = linked?.let { "Day ${it.currentDay} of ${it.durationDays}" } ?: "Daily routine",
+                                routineHabits = groupHabits,
+                                onToggleHabit = onToggleHabit,
+                                challenge = linked
+                            )
+                        }
+                    }
+                }
+
+
+                }
+                TodayCard.MOOD -> {
+                // Daily Mood Tracker Card
+                item(key = "mood") {
+                    Box(
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .staggeredEntrance(6)
+                    ) {
+                        MoodTrackerCard(
+                            currentMood = currentMood,
+                            onSelectMood = onSelectMood,
+                            goodPercent = moodGoodPercent
+                        )
+                    }
+                }
+
+
+                }
+                TodayCard.FOCUS -> {
+                // Focus & Flow card
+                item(key = "focus") {
+                    Box(
+                        modifier = Modifier
+                            .animateItem()
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .staggeredEntrance(7)
+                    ) {
+                        FocusCard(onOpenFocusMode = onOpenFocusMode)
+                    }
+                }
+
+
+                }
+            }
+        }
+        item(key = "customize_today") {
+            Row(
                 modifier = Modifier
                     .animateItem()
-                    .padding(horizontal = 16.dp, vertical = 5.dp)
-                    .staggeredEntrance(index)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .clip(AppShapes.pill)
+                    .bounceClick { customizing = true }
+                    .background(c.cardMuted)
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .testTag("btn_customize_today"),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                HabitCard(
-                    habitWithStatus = habitWithStatus,
-                    onToggleCompleted = { onToggleHabit(habitWithStatus) },
-                    onIncrement = { amount -> onIncrementHabit(habitWithStatus, amount) },
-                    onOpenDetails = { onOpenHabitDetails(habitWithStatus.habit) }
-                )
+                Icon(Icons.Default.Tune, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Customize Today", style = MaterialTheme.typography.labelLarge, color = c.textSecondary)
             }
+        }
+    }
+
+    // Wide screens (tablets, the 14" display): cards beside the habits
+    if (LocalConfiguration.current.screenWidthDp >= 840) {
+        Row(modifier = modifier.fillMaxSize().background(c.background)) {
+            LazyColumn(
+                modifier = Modifier.weight(0.45f).fillMaxHeight(),
+                contentPadding = PaddingValues(bottom = 96.dp)
+            ) {
+                headerSection()
+                cardsSection()
+            }
+            LazyColumn(
+                modifier = Modifier.weight(0.55f).fillMaxHeight(),
+                contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp)
+            ) {
+                habitsSection()
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .background(c.background),
+            contentPadding = PaddingValues(bottom = 96.dp)
+        ) {
+            headerSection()
+            habitsSection()
+            cardsSection()
         }
     }
 }

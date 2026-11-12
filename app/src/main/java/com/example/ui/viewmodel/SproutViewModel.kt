@@ -160,6 +160,19 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    // ---- Today layout & habit order ----
+    val todayLayout = MutableStateFlow(com.example.ui.screens.TodayLayout.load(application))
+
+    fun setTodayLayout(layout: com.example.ui.screens.TodayLayout) {
+        todayLayout.value = layout
+        com.example.ui.screens.TodayLayout.save(getApplication(), layout)
+    }
+
+    /** Saves the manual order of habits (first id = top). */
+    fun saveHabitOrder(ids: List<Long>) {
+        viewModelScope.launch(Dispatchers.IO) { repository.saveHabitOrder(ids) }
+    }
+
     /** Habit whose details/history sheet is open (null = closed). */
     val habitDetails = MutableStateFlow<HabitEntity?>(null)
 
