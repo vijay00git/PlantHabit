@@ -150,6 +150,10 @@ data class HabitDraft(
     val iconName: String,
     /** Calendar.DAY_OF_WEEK values (1 = Sun … 7 = Sat) the habit repeats on. */
     val days: Set<Int> = (1..7).toSet(),
+    /** >0 = "N times a week" on any days. */
+    val timesPerWeek: Int = 0,
+    /** Extra daily reminder times ("HH:mm"). */
+    val extraReminders: List<String> = emptyList(),
 )
 
 /**
@@ -181,6 +185,21 @@ fun CreateHabitDialog(
     var pickedIcon by remember { mutableStateOf(initial?.iconName) }
     val iconName = pickedIcon ?: AppIcon.guessFromTitle(title, category).key
     var days by remember { mutableStateOf(initial?.scheduledDays() ?: (1..7).toSet()) }
+    var timesPerWeek by remember { mutableIntStateOf(initial?.timesPerWeek ?: 0) }
+    var extraReminders by remember {
+        mutableStateOf(initial?.extraReminderTimes?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList())
+    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    fun pickTime(initialTime: String, onPicked: (String) -> Unit) {
+        val parts = initialTime.split(":")
+        android.app.TimePickerDialog(
+            context,
+            { _, h, m -> onPicked("%02d:%02d".format(h, m)) },
+            parts.getOrNull(0)?.toIntOrNull() ?: 12,
+            parts.getOrNull(1)?.toIntOrNull() ?: 0,
+            true
+        ).show()
+    }
     var isSaving by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -213,7 +232,9 @@ fun CreateHabitDialog(
                     reminderEnabled = reminderEnabled,
                     syncGoogleCalendar = syncGoogleCalendar,
                     iconName = iconName,
-                    days = days,
+                    days = if (timesPerWeek > 0) (1..7).toSet() else days,
+                    timesPerWeek = timesPerWeek,
+                    extraReminders = extraReminders,
                 )
             )
         }
@@ -372,18 +393,26 @@ fun CreateHabitDialog(
             }
 
             // Repeat days
-            FieldSection(label = "REPEAT · ${scheduleLabel(days).uppercase()}") {
+            FieldSection(label = "REPEAT · " + (if (timesPerWeek > 0) "${timesPerWeek}× A WEEK" else scheduleLabel(days).uppercase())) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(
                             "Every day" to (1..7).toSet(),
                             "Weekdays" to setOf(2, 3, 4, 5, 6),
                             "Weekends" to setOf(1, 7),
                         ).forEach { (label, preset) ->
-                            UnitChip(label = label, selected = days == preset, onClick = { days = preset })
+                            UnitChip(label = label, selected = timesPerWeek == 0 && days == preset, onClick = { timesPerWeek = 0; days = preset })
                         }
+                        UnitChip(label = "Times a week", selected = timesPerWeek > 0, onClick = { if (timesPerWeek == 0) timesPerWeek = 3 })
                     }
-                    Row(
+                    if (timesPerWeek > 0) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Any days, this many times:", style = MaterialTheme.typography.bodyMedium, color = c.textSecondary, modifier = Modifier.weight(1f))
+                            StepperButton(Icons.Default.Remove, "Fewer", enabled = timesPerWeek > 1) { timesPerWeek-- }
+                            Text("$timesPerWeek×", style = MaterialTheme.typography.titleLarge, color = c.textPrimary, modifier = Modifier.padding(horizontal = 14.dp))
+                            StepperButton(Icons.Default.Add, "More", enabled = timesPerWeek < 6) { timesPerWeek++ }
+                        }
+                    } else Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -485,6 +514,48 @@ fun CreateHabitDialog(
                         reminderEnabled = it
                     }
                 )
+                if (reminderEnabled) {
+                    // Extra reminder times
+                    FlowRow(
+                        modifier = Modifier.padding(top = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        extraReminders.forEach { t ->
+                            Row(
+                                modifier = Modifier
+                                    .clip(AppShapes.pill)
+                                    .background(c.sunriseSoft)
+                                    .bounceClick { extraReminders = extraReminders - t }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("⏰ $t", style = MaterialTheme.typography.labelLarge, color = c.sunrise)
+                                Spacer(Modifier.width(6.dp))
+                                Icon(Icons.Default.Close, contentDescription = "Remove $t", tint = c.sunrise, modifier = Modifier.size(14.dp))
+                            }
+                        }
+                        if (extraReminders.size < 7) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(AppShapes.pill)
+                                    .background(c.cardMuted)
+                                    .bounceClick {
+                                        pickTime(scheduledTime) { t ->
+                                            if (t != scheduledTime && t !in extraReminders) extraReminders = (extraReminders + t).sorted()
+                                        }
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .testTag("btn_add_reminder_time"),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Another reminder", style = MaterialTheme.typography.labelLarge, color = c.textSecondary)
+                            }
+                        }
+                    }
+                }
                 Box(
                     Modifier
                         .padding(vertical = 10.dp)

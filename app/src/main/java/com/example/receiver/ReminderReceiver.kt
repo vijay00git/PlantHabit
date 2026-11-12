@@ -42,7 +42,13 @@ class ReminderReceiver : BroadcastReceiver() {
                         val db = SproutDatabase.getDatabase(context, scope)
                         val habit = db.habitDao().getHabitById(habitId)
                         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                        val doneToday = db.habitDao().getLogForHabitAndDate(habitId, today)?.isCompleted == true
+                        var doneToday = db.habitDao().getLogForHabitAndDate(habitId, today)?.isCompleted == true
+                        // Weekly habits: no nagging once this week's goal is met
+                        if (habit != null && habit.timesPerWeek > 0) {
+                            val week = com.example.data.model.weekDates(com.example.data.model.weekStartOf(today)).toSet()
+                            val done = db.habitDao().getLogsForHabit(habitId).count { it.isCompleted && it.date in week }
+                            if (done >= habit.timesPerWeek) doneToday = true
+                        }
                         // Only remind if the habit still exists and isn't already done today
                         if (habit == null || !doneToday) {
                             NotificationHelper.showReminderNotification(context, habitId, title, desc)

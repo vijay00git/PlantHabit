@@ -228,6 +228,8 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
                         reminderEnabled = draft.reminderEnabled,
                         reminderTime = draft.scheduledTime,
                         reminderDays = draft.days.sorted().joinToString(","),
+                        timesPerWeek = draft.timesPerWeek,
+                        extraReminderTimes = draft.extraReminders.joinToString(","),
                         syncWithGoogleCalendar = draft.syncGoogleCalendar
                     )
                 )
@@ -244,6 +246,8 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
                         reminderEnabled = draft.reminderEnabled,
                         reminderTime = draft.scheduledTime,
                         reminderDays = draft.days.sorted().joinToString(","),
+                        timesPerWeek = draft.timesPerWeek,
+                        extraReminderTimes = draft.extraReminders.joinToString(","),
                         syncWithGoogleCalendar = draft.syncGoogleCalendar
                     )
                 )

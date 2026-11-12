@@ -12,15 +12,32 @@ import java.util.Calendar
 
 object ReminderScheduler {
 
-    fun scheduleHabitReminder(context: Context, habit: HabitEntity) {
-        if (!habit.reminderEnabled) {
-            cancelHabitReminder(context, habit.id)
-            return
-        }
+    /** All reminder times for a habit: the main one plus any extra "HH:mm" times. */
+    fun reminderTimes(habit: HabitEntity): List<String> =
+        (listOf(habit.reminderTime) + habit.extraReminderTimes.split(","))
+            .map { it.trim() }
+            .filter { Regex("^\\d{1,2}:\\d{2}$").matches(it) }
+            .distinct()
+            .take(MAX_REMINDERS)
 
+    private const val MAX_REMINDERS = 8
+
+    /** Request code per reminder slot; slot 0 keeps the original id-based code. */
+    private fun requestCode(habitId: Long, slot: Int): Int =
+        if (slot == 0) habitId.toInt() else (1_000_000 + habitId * MAX_REMINDERS + slot).toInt()
+
+    fun scheduleHabitReminder(context: Context, habit: HabitEntity) {
+        cancelHabitReminder(context, habit.id)
+        if (!habit.reminderEnabled) return
+        reminderTimes(habit).forEachIndexed { slot, time ->
+            scheduleAt(context, habit, time, requestCode(habit.id, slot))
+        }
+    }
+
+    private fun scheduleAt(context: Context, habit: HabitEntity, time: String, requestCode: Int) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
-        val parts = habit.reminderTime.split(":")
+        val parts = time.split(":")
         val hour = parts.getOrNull(0)?.toIntOrNull() ?: 8
         val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
 
@@ -48,7 +65,7 @@ object ReminderScheduler {
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            habit.id.toInt(),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -119,12 +136,15 @@ object ReminderScheduler {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             action = ReminderReceiver.ACTION_HABIT_REMINDER
         }
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            habitId.toInt(),
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
+        for (slot in 0 until MAX_REMINDERS) {
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode(habitId, slot),
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            ) ?: continue
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        }
     }
 }

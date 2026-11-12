@@ -137,7 +137,8 @@ fun TodayScreen(
     }
 
     val completedCount = habitsWithStatus.count { it.isCompleted }
-    val totalCount = habitsWithStatus.size
+    // Weekly habits whose goal is already met don't count as "still to do" today
+    val totalCount = habitsWithStatus.count { it.isCompleted || !it.weeklyGoalMet }
     val joinedGoals = goalChallenges.filter { it.isJoined && it.goalTarget > 0 }
 
     var reorderMode by rememberSaveable { mutableStateOf(false) }

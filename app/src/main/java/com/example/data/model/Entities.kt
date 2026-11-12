@@ -48,7 +48,24 @@ fun HabitEntity.scheduledDays(): Set<Int> =
 fun HabitEntity.isScheduledOn(dayOfWeek: Int): Boolean = dayOfWeek in scheduledDays()
 
 /** "Every day", "Weekdays", "Weekends" or e.g. "Mon, Wed, Fri". */
-fun HabitEntity.scheduleLabel(): String = scheduleLabel(scheduledDays())
+fun HabitEntity.scheduleLabel(): String =
+    if (timesPerWeek > 0) "${timesPerWeek}× a week" else scheduleLabel(scheduledDays())
+
+/** Monday (yyyy-MM-dd) of the week containing [date]. */
+fun weekStartOf(date: String): String {
+    val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+    val cal = java.util.Calendar.getInstance().apply { time = fmt.parse(date) ?: java.util.Date() }
+    val back = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7 // Mon=0 … Sun=6
+    cal.add(java.util.Calendar.DAY_OF_YEAR, -back)
+    return fmt.format(cal.time)
+}
+
+/** The 7 dates (Mon–Sun) of the week starting [weekStart]. */
+fun weekDates(weekStart: String): List<String> {
+    val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+    val cal = java.util.Calendar.getInstance().apply { time = fmt.parse(weekStart) ?: java.util.Date() }
+    return List(7) { i -> if (i > 0) cal.add(java.util.Calendar.DAY_OF_YEAR, 1); fmt.format(cal.time) }
+}
 
 fun scheduleLabel(days: Set<Int>): String {
     val names = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -218,5 +235,11 @@ data class HabitWithStatus(
     val log: HabitLogEntity?,
     val currentProgress: Int,
     val isCompleted: Boolean,
-    val currentStreak: Int = 0
-)
+    val currentStreak: Int = 0,
+    /** For "N times a week" habits: completions in the selected date's week (Mon–Sun). */
+    val weekDone: Int = 0
+) {
+    val isWeekly: Boolean get() = habit.timesPerWeek > 0
+    /** Weekly goal already reached and today isn't ticked: nothing more needed this week. */
+    val weeklyGoalMet: Boolean get() = isWeekly && weekDone >= habit.timesPerWeek && !isCompleted
+}

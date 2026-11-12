@@ -301,8 +301,12 @@ fun HabitCard(
                         val progressText = if (isStepOrWater) {
                             "%,d / %,d %s".format(currentProgress, target, habit.unit)
                         } else {
-                            if (isDone) "Completed · nice work!"
-                            else habit.scheduleLabel().let { if (it == "Every day") "Tap or swipe → to complete" else "$it · tap to complete" }
+                            when {
+                                isDone -> "Completed · nice work!"
+                                habitWithStatus.weeklyGoalMet -> "Weekly goal met ✓ · ${habitWithStatus.weekDone}/${habit.timesPerWeek} this week"
+                                habitWithStatus.isWeekly -> "${habitWithStatus.weekDone}/${habit.timesPerWeek} this week · tap to log"
+                                else -> habit.scheduleLabel().let { if (it == "Every day") "Tap or swipe → to complete" else "$it · tap to complete" }
+                            }
                         }
                         Text(
                             text = progressText,
