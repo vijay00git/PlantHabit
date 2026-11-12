@@ -586,6 +586,7 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
     fun refreshAnalytics() {
         viewModelScope.launch(Dispatchers.IO) {
             _analyticsData.value = repository.getDeepAnalytics()
+            weeklyRecap.value = com.example.data.repository.WeeklyRecap.compute(db.habitDao())
             // Badges: queue any newly earned ones for the celebration popup
             if (onboardingDone.value) {
                 val fresh = com.example.data.repository.Achievements.evaluate(db.habitDao())
@@ -593,6 +594,8 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+
+    val weeklyRecap = MutableStateFlow<com.example.data.repository.WeeklyRecap?>(null)
 
     /** Achievements earned but not yet celebrated on screen. */
     val newAchievements = MutableStateFlow<List<com.example.data.repository.Achievement>>(emptyList())

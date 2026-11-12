@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         NotificationHelper.createNotificationChannel(this)
+        com.example.data.repository.RecapScheduler.schedule(this)
 
         setContent {
             val viewModel: SproutViewModel = viewModel()
@@ -115,6 +116,7 @@ fun SproutApp(viewModel: SproutViewModel) {
     val todayLayout by viewModel.todayLayout.collectAsState()
     val timerHabit by viewModel.timerHabit.collectAsState()
     val newAchievements by viewModel.newAchievements.collectAsState()
+    val weeklyRecap by viewModel.weeklyRecap.collectAsState()
     val unlockedAchievements by viewModel.unlockedAchievements.collectAsState()
     val archivedHabits by viewModel.archivedHabits.collectAsState()
     val calendars by viewModel.calendars.collectAsState()
@@ -344,7 +346,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                         onOpenSettings = { viewModel.isSettingsOpen.value = true },
                         onOpenHabit = { viewModel.habitDetails.value = it },
                         moods = moodLogs,
-                        unlockedAchievements = unlockedAchievements
+                        unlockedAchievements = unlockedAchievements,
+                        weeklyRecap = weeklyRecap
                     )
                 }
 

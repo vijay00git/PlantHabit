@@ -19,6 +19,7 @@ class BootReceiver : BroadcastReceiver() {
                 habits.filter { it.reminderEnabled }.forEach { habit ->
                     ReminderScheduler.scheduleHabitReminder(context, habit)
                 }
+                com.example.data.repository.RecapScheduler.schedule(context)
             }
         }
     }

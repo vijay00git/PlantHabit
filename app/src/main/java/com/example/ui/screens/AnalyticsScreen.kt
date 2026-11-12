@@ -100,6 +100,7 @@ fun AnalyticsScreen(
     onOpenHabit: (HabitEntity) -> Unit = {},
     moods: List<com.example.data.model.MoodLogEntity> = emptyList(),
     unlockedAchievements: Map<String, Long> = emptyMap(),
+    weeklyRecap: com.example.data.repository.WeeklyRecap? = null,
 ) {
     val c = PlantTheme.colors
     // Shown for the moment before real analytics load
@@ -181,6 +182,18 @@ fun AnalyticsScreen(
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                         .staggeredEntrance(0)
                 )
+            }
+
+            // This week's recap
+            if (weeklyRecap != null) {
+                item(key = "weekly_recap") {
+                    com.example.ui.components.WeeklyRecapCard(
+                        recap = weeklyRecap,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .staggeredEntrance(1)
+                    )
+                }
             }
 
             // Per-habit monthly heat maps

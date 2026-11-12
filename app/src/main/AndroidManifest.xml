@@ -46,6 +46,10 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".data.repository.RecapReceiver"
+            android:exported="false" />
+
         <!-- Home-screen widget: today's habits -->
         <receiver
             android:name=".widget.PlantHabitWidgetReceiver"
