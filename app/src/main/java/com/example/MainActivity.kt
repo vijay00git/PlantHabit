@@ -91,6 +91,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SproutApp(viewModel: SproutViewModel) {
     val coroutineScope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     val currentTab by viewModel.currentTab.collectAsState()
@@ -328,6 +329,30 @@ fun SproutApp(viewModel: SproutViewModel) {
                         },
                         onDownloadTemplateClick = {
                             viewModel.isTemplateDownloadOpen.value = true
+                        },
+                        onToggleFavorite = { ch -> viewModel.setChallengeFavorite(ch.id, !ch.isFavorite) },
+                        onMoveToGroup = { ch, group ->
+                            viewModel.setChallengeGroup(ch.id, group)
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    if (group.isBlank()) "Removed '${ch.title}' from its group" else "Moved '${ch.title}' to 📁 $group"
+                                )
+                            }
+                        },
+                        onShare = { ch ->
+                            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "${ch.title} — PlantHabit challenge")
+                                putExtra(android.content.Intent.EXTRA_TEXT, viewModel.challengeAsJson(ch))
+                            }
+                            context.startActivity(android.content.Intent.createChooser(send, "Share challenge"))
+                        },
+                        onDelete = { ch ->
+                            viewModel.deleteChallenge(ch) { msg -> coroutineScope.launch { snackbarHostState.showSnackbar(msg) } }
+                        },
+                        onUnhide = { ch ->
+                            viewModel.unhideChallenge(ch.id)
+                            coroutineScope.launch { snackbarHostState.showSnackbar("'${ch.title}' is back 🌱") }
                         }
                     )
                 }
@@ -356,6 +381,7 @@ fun SproutApp(viewModel: SproutViewModel) {
                             coroutineScope.launch { snackbarHostState.showSnackbar(message) }
                         }
                     },
+                    onToggleFavorite = { viewModel.setChallengeFavorite(challenge.id, !challenge.isFavorite) },
                     onRestart = {
                         viewModel.restartChallenge(challenge.id)
                         coroutineScope.launch { snackbarHostState.showSnackbar("'${challenge.title}' restarted — day 1 again! 🌱") }

@@ -197,6 +197,7 @@ object BackupManager {
         put("totalTasks", totalTasks); put("completedTasksToday", completedTasksToday); put("dailyTip", dailyTip)
         put("tasksJson", tasksJson); put("goalTarget", goalTarget.toDouble()); put("goalCurrent", goalCurrent.toDouble())
         put("goalUnit", goalUnit); put("startedAt", startedAt); put("icon", icon); put("timesCompleted", timesCompleted)
+        put("isFavorite", isFavorite); put("groupName", groupName); put("isHidden", isHidden)
     }
 
     private fun challengeFromJson(o: JSONObject) = ChallengeEntity(
@@ -220,5 +221,8 @@ object BackupManager {
         startedAt = o.optLong("startedAt"),
         icon = o.optString("icon"),
         timesCompleted = o.optInt("timesCompleted"),
+        isFavorite = o.optBoolean("isFavorite"),
+        groupName = o.optString("groupName"),
+        isHidden = o.optBoolean("isHidden"),
     )
 }

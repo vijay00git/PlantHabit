@@ -358,6 +358,10 @@ object BuiltInChallenges {
                 completedTasksToday = current.completedTasksToday,
                 goalCurrent = current.goalCurrent,
                 startedAt = current.startedAt,
+                timesCompleted = current.timesCompleted,
+                isFavorite = current.isFavorite,
+                groupName = current.groupName,
+                isHidden = current.isHidden,
                 // Keep a photo the user attached; otherwise use the bundled banner.
                 bannerResName = if (BannerStorage.isCustom(current.bannerResName)) current.bannerResName else def.bannerResName,
             )

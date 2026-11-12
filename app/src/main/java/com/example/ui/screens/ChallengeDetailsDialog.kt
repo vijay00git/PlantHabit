@@ -104,6 +104,7 @@ fun ChallengeDetailsDialog(
     onRemoveBanner: () -> Unit = {},
     onRestart: () -> Unit = {},
     onFinish: (keepHabits: Boolean) -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
 ) {
     val finished = challenge.isFinished()
     val c = PlantTheme.colors
@@ -161,6 +162,7 @@ fun ChallengeDetailsDialog(
                     accent = accent,
                     onPickBanner = onPickBanner,
                     onRemoveBanner = onRemoveBanner,
+                    onToggleFavorite = onToggleFavorite,
                     onClose = { if (!accepting) onDismiss() }
                 )
 
@@ -441,6 +443,7 @@ private fun DetailsHeader(
     accent: AccentPair,
     onPickBanner: (Uri) -> Unit,
     onRemoveBanner: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onClose: () -> Unit,
 ) {
     val c = PlantTheme.colors
@@ -511,6 +514,7 @@ private fun DetailsHeader(
                 .padding(14.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            FavoriteStar(favorite = challenge.isFavorite, onToggle = onToggleFavorite)
             BannerActionPill(
                 icon = Icons.Default.AddPhotoAlternate,
                 text = if (photo == null) "Add banner photo" else "Change photo",

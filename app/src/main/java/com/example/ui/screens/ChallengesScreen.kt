@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Star
 import com.example.data.model.isFinished
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
@@ -116,13 +118,36 @@ fun ChallengesScreen(
     onCreateCustomChallenge: () -> Unit,
     onImportJsonClick: () -> Unit,
     onDownloadTemplateClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onToggleFavorite: (ChallengeEntity) -> Unit = {},
+    onMoveToGroup: (ChallengeEntity, String) -> Unit = { _, _ -> },
+    onShare: (ChallengeEntity) -> Unit = {},
+    onDelete: (ChallengeEntity) -> Unit = {},
+    onUnhide: (ChallengeEntity) -> Unit = {},
 ) {
     val c = PlantTheme.colors
 
     var selectedCategory by rememberSaveable { mutableStateOf(ALL_CATEGORIES) }
-    val categories = remember(challenges) {
-        listOf(ALL_CATEGORIES) + challenges.map { it.category.trim() }
+    var query by rememberSaveable { mutableStateOf("") }
+    var groupingName by rememberSaveable { mutableStateOf(ChallengeGrouping.NONE.name) }
+    var sortName by rememberSaveable { mutableStateOf(ChallengeSort.A_Z.name) }
+    val grouping = ChallengeGrouping.valueOf(groupingName)
+    val sort = ChallengeSort.valueOf(sortName)
+    var collapsed by rememberSaveable { mutableStateOf(setOf<String>()) }
+
+    // Dialog / sheet targets
+    var actionTarget by remember { mutableStateOf<ChallengeEntity?>(null) }
+    var groupTarget by remember { mutableStateOf<ChallengeEntity?>(null) }
+    var deleteTarget by remember { mutableStateOf<ChallengeEntity?>(null) }
+    var showHidden by remember { mutableStateOf(false) }
+
+    val visible = challenges.filter { !it.isHidden }
+    val hidden = challenges.filter { it.isHidden }
+    val myGroups = remember(visible) { visible.map { it.groupName }.filter { it.isNotBlank() }.distinct().sorted() }
+    val favoriteCount = visible.count { it.isFavorite }
+
+    val categories = remember(visible) {
+        listOf(ALL_CATEGORIES, FAVORITES) + visible.map { it.category.trim() }
             .filter { it.isNotEmpty() }
             .distinctBy { it.lowercase() }
     }
@@ -131,20 +156,88 @@ fun ChallengesScreen(
         selectedCategory
     } else ALL_CATEGORIES
 
-    fun matches(ch: ChallengeEntity): Boolean =
-        activeCategory == ALL_CATEGORIES || ch.category.trim().equals(activeCategory, ignoreCase = true)
+    fun matches(ch: ChallengeEntity): Boolean {
+        val categoryOk = when (activeCategory) {
+            ALL_CATEGORIES -> true
+            FAVORITES -> ch.isFavorite
+            else -> ch.category.trim().equals(activeCategory, ignoreCase = true)
+        }
+        val q = query.trim()
+        val queryOk = q.isEmpty() || listOf(ch.title, ch.subtitle, ch.category, ch.groupName, ch.description)
+            .any { it.contains(q, ignoreCase = true) }
+        return categoryOk && queryOk
+    }
 
-    val joinedChallenges = challenges.filter { it.isJoined && matches(it) }
-    val discoverChallenges = challenges.filter { !it.isJoined && matches(it) }
-    // Carousel: a few hand-picked built-ins, then anything else not joined yet
-    val featured = remember(challenges) {
+    // Favourites first, then the chosen sort
+    val ordering = compareByDescending<ChallengeEntity> { it.isFavorite }.then(
+        when (sort) {
+            ChallengeSort.A_Z -> compareBy { it.title.lowercase() }
+            ChallengeSort.SHORTEST -> compareBy<ChallengeEntity> { it.durationDays }.thenBy { it.title.lowercase() }
+            ChallengeSort.LONGEST -> compareByDescending<ChallengeEntity> { it.durationDays }.thenBy { it.title.lowercase() }
+        }
+    )
+    val joinedChallenges = visible.filter { it.isJoined && matches(it) }.sortedWith(ordering)
+    val discoverChallenges = visible.filter { !it.isJoined && matches(it) }.sortedWith(ordering)
+
+    // Discover sections for the chosen grouping: (key, emoji, title, items)
+    val sections: List<Triple<String, String, List<ChallengeEntity>>> = when (grouping) {
+        ChallengeGrouping.NONE -> listOf(Triple("Discover challenges", "🌱", discoverChallenges))
+        ChallengeGrouping.CATEGORY -> discoverChallenges.groupBy { it.category.ifBlank { "Other" } }
+            .toSortedMap(String.CASE_INSENSITIVE_ORDER)
+            .map { (cat, list) -> Triple(cat, categoryEmoji(cat), list) }
+        ChallengeGrouping.STATUS -> listOf(
+            Triple("Completed before", "🏆", discoverChallenges.filter { it.timesCompleted > 0 }),
+            Triple("Not started yet", "🌱", discoverChallenges.filter { it.timesCompleted == 0 }),
+        ).filter { it.third.isNotEmpty() }
+        ChallengeGrouping.MY_GROUPS -> (myGroups.map { g -> Triple(g, "📁", discoverChallenges.filter { it.groupName == g }) } +
+            listOf(Triple("Ungrouped", "🗂️", discoverChallenges.filter { it.groupName.isBlank() })))
+            .filter { it.third.isNotEmpty() }
+    }
+
+    // Carousel only on the plain, unfiltered view
+    val showFeatured = query.isBlank() && activeCategory == ALL_CATEGORIES
+    val featured = remember(visible) {
         val picks = listOf("gratitude_month", "meditation_21", "digital_detox", "read_daily", "hydration_hero")
-        (picks.mapNotNull { id -> challenges.find { it.id == id } } + challenges.filter { !it.isJoined })
+        (picks.mapNotNull { id -> visible.find { it.id == id } } + visible.filter { !it.isJoined })
             .distinctBy { it.id }
             .take(5)
     }
     val nothingMatches = joinedChallenges.isEmpty() && discoverChallenges.isEmpty()
     val columns = if (LocalConfiguration.current.screenWidthDp >= 600) 2 else 1
+
+    // ---- sheets & dialogs ----
+    actionTarget?.let { ch ->
+        ChallengeActionsSheet(
+            challenge = ch,
+            onToggleFavorite = { onToggleFavorite(ch) },
+            onMoveToGroup = { actionTarget = null; groupTarget = ch },
+            onShare = { onShare(ch) },
+            onDelete = { actionTarget = null; deleteTarget = ch },
+            onDismiss = { actionTarget = null }
+        )
+    }
+    groupTarget?.let { ch ->
+        MoveToGroupDialog(
+            challenge = ch,
+            existingGroups = myGroups,
+            onSave = { name -> onMoveToGroup(ch, name); groupTarget = null },
+            onDismiss = { groupTarget = null }
+        )
+    }
+    deleteTarget?.let { ch ->
+        DeleteChallengeDialog(
+            challenge = ch,
+            onConfirm = { onDelete(ch); deleteTarget = null },
+            onDismiss = { deleteTarget = null }
+        )
+    }
+    if (showHidden) {
+        HiddenChallengesDialog(
+            hidden = hidden,
+            onRestore = { onUnhide(it) },
+            onDismiss = { showHidden = false }
+        )
+    }
 
     LazyColumn(
         modifier = modifier
@@ -208,7 +301,7 @@ fun ChallengesScreen(
                 Spacer(Modifier.height(14.dp))
 
                 // Quick stats
-                val joinedCount = challenges.count { it.isJoined }
+                val joinedCount = visible.count { it.isJoined }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatChip(
                         icon = Icons.Default.EmojiEvents,
@@ -217,15 +310,32 @@ fun ChallengesScreen(
                     )
                     StatChip(
                         icon = Icons.Default.AutoAwesome,
-                        text = "${challenges.size - joinedCount} to discover",
+                        text = "${visible.size - joinedCount} to discover",
                         accent = AccentPair(c.sunrise, c.sunriseSoft)
                     )
+                    if (favoriteCount > 0) {
+                        StatChip(
+                            icon = Icons.Default.Star,
+                            text = "$favoriteCount favourite" + if (favoriteCount == 1) "" else "s",
+                            accent = AccentPair(c.sun, c.sunSoft)
+                        )
+                    }
                 }
+
+                Spacer(Modifier.height(14.dp))
+                ChallengeToolbar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    grouping = grouping,
+                    onGroupingChange = { groupingName = it.name },
+                    sort = sort,
+                    onSortChange = { sortName = it.name }
+                )
             }
         }
 
         // Featured carousel (auto-advances, swipeable)
-        if (featured.isNotEmpty()) {
+        if (showFeatured && featured.isNotEmpty()) {
             item(key = "featured_carousel") {
                 FeaturedCarousel(
                     challenges = featured,
@@ -249,11 +359,13 @@ fun ChallengesScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(categories, key = { it.lowercase() }) { category ->
-                        val accent = if (category == ALL_CATEGORIES) {
-                            AccentPair(c.primary, c.primarySoft)
-                        } else c.categoryColors(category)
+                        val accent = when (category) {
+                            ALL_CATEGORIES -> AccentPair(c.primary, c.primarySoft)
+                            FAVORITES -> AccentPair(c.sun, c.sunSoft)
+                            else -> c.categoryColors(category)
+                        }
                         CategoryChip(
-                            label = category,
+                            label = if (category == FAVORITES) "★ Favourites ($favoriteCount)" else category,
                             accent = accent,
                             selected = category.equals(activeCategory, ignoreCase = true),
                             onClick = { selectedCategory = category }
@@ -282,6 +394,8 @@ fun ChallengesScreen(
                 ActiveChallengeCard(
                     challenge = challenge,
                     onClick = { onChallengeClick(challenge) },
+                    onLongClick = { actionTarget = challenge },
+                    onToggleFavorite = { onToggleFavorite(challenge) },
                     modifier = Modifier
                         .animateItem()
                         .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -291,52 +405,84 @@ fun ChallengesScreen(
             }
         }
 
-        // Section: discover (grid of banner tiles)
-        item(key = "discover_header") {
-            SectionHeader(
-                title = "Discover challenges",
-                modifier = Modifier
-                    .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 6.dp)
-                    .animateItem(),
-                action = {
-                    if (discoverChallenges.isNotEmpty()) {
-                        CountBadge(discoverChallenges.size, AccentPair(c.sunrise, c.sunriseSoft))
-                    }
-                }
-            )
-        }
-
         if (nothingMatches) {
             item(key = "empty_filter") {
                 EmptyState(
-                    emoji = "🌱",
-                    title = "No $activeCategory challenges yet",
-                    message = "Try another category or import your own challenge as JSON.",
+                    emoji = if (query.isNotBlank()) "🔍" else if (activeCategory == FAVORITES) "⭐" else "🌱",
+                    title = when {
+                        query.isNotBlank() -> "No challenges match \"$query\""
+                        activeCategory == FAVORITES -> "No favourites yet"
+                        else -> "No $activeCategory challenges yet"
+                    },
+                    message = if (activeCategory == FAVORITES) "Tap the ☆ on any challenge to keep it here."
+                        else "Try another search or category, or import your own challenge as JSON.",
                     modifier = Modifier.animateItem()
                 )
             }
         }
 
-        val rows = discoverChallenges.chunked(columns)
-        itemsIndexed(rows, key = { _, row -> "discover_" + row.joinToString("_") { it.id } }) { rowIndex, row ->
-            Row(
-                modifier = Modifier
-                    .animateItem()
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                row.forEachIndexed { i, challenge ->
-                    ChallengeTile(
-                        challenge = challenge,
-                        onClick = { onChallengeClick(challenge) },
+        // Discover sections (grid of banner tiles), grouped as chosen
+        sections.forEach { (title, emoji, list) ->
+            val sectionKey = "${grouping.name}:$title"
+            val isCollapsed = sectionKey in collapsed
+            item(key = "section_$sectionKey") {
+                CollapsibleSectionHeader(
+                    title = title,
+                    emoji = emoji,
+                    count = list.size,
+                    collapsed = isCollapsed,
+                    onToggle = { collapsed = if (isCollapsed) collapsed - sectionKey else collapsed + sectionKey },
+                    modifier = Modifier
+                        .animateItem()
+                        .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 2.dp)
+                )
+            }
+            if (!isCollapsed) {
+                val rows = list.chunked(columns)
+                itemsIndexed(rows, key = { _, row -> "row_${sectionKey}_" + row.joinToString("_") { it.id } }) { rowIndex, row ->
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .staggeredEntrance(rowIndex * columns + i + 2)
-                            .testTag("challenge_card_${challenge.id}")
-                    )
+                            .animateItem()
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        row.forEachIndexed { i, challenge ->
+                            ChallengeTile(
+                                challenge = challenge,
+                                onClick = { onChallengeClick(challenge) },
+                                onLongClick = { actionTarget = challenge },
+                                onToggleFavorite = { onToggleFavorite(challenge) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .staggeredEntrance(rowIndex * columns + i + 2)
+                                    .testTag("challenge_card_${challenge.id}")
+                            )
+                        }
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
                 }
-                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+
+        // Hidden built-in challenges
+        if (hidden.isNotEmpty()) {
+            item(key = "hidden_footer") {
+                Row(
+                    modifier = Modifier
+                        .animateItem()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                        .clip(AppShapes.pill)
+                        .bounceClick { showHidden = true }
+                        .background(c.cardMuted)
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .testTag("btn_hidden_challenges"),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Hidden challenges (${hidden.size})", style = MaterialTheme.typography.labelLarge, color = c.textSecondary)
+                }
             }
         }
 
@@ -407,6 +553,24 @@ fun ChallengesScreen(
 /* ------------------------------------------------------------------------------------------ */
 /* Pieces                                                                                       */
 /* ------------------------------------------------------------------------------------------ */
+
+private const val FAVORITES = "__favorites__"
+
+private fun categoryEmoji(category: String): String = when (category.trim().lowercase()) {
+    "health", "hydration" -> "💧"
+    "fitness" -> "🏃"
+    "mindfulness" -> "🧘"
+    "sleep" -> "🌙"
+    "nutrition" -> "🥗"
+    "productivity" -> "⚡"
+    "learning" -> "📚"
+    "finance" -> "💰"
+    "people", "social" -> "💞"
+    "home" -> "🏡"
+    "routine" -> "☀️"
+    "creativity" -> "🎨"
+    else -> "🌱"
+}
 
 /** Icon representing a challenge category. */
 internal fun challengeCategoryIcon(category: String): ImageVector = when (category.trim().lowercase()) {
@@ -769,6 +933,8 @@ private fun ChallengeTile(
     challenge: ChallengeEntity,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    onToggleFavorite: () -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val accent = c.categoryColors(challenge.category)
@@ -785,7 +951,7 @@ private fun ChallengeTile(
     )
     Column(
         modifier = modifier
-            .bounceClick(pressedScale = 0.97f, onClick = onClick)
+            .bounceClick(pressedScale = 0.97f, onLongClick = onLongClick, onClick = onClick)
             .clip(AppShapes.large)
             .background(c.card)
             .border(1.dp, c.border, AppShapes.large)
@@ -805,13 +971,19 @@ private fun ChallengeTile(
                     .fillMaxSize()
                     .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))))
             )
-            // Duration + goal chips
+            FavoriteStar(
+                favorite = challenge.isFavorite,
+                onToggle = onToggleFavorite,
+                modifier = Modifier.align(Alignment.TopStart).padding(10.dp)
+            )
+            // Group, duration + goal chips
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                if (challenge.groupName.isNotBlank()) TileChip("📁 ${challenge.groupName}")
                 if (challenge.timesCompleted > 0) TileChip("🏆 ×${challenge.timesCompleted}")
                 if (challenge.goalTarget > 0f) TileChip("🎯 Goal")
                 TileChip("${challenge.durationDays} days")
@@ -890,6 +1062,8 @@ private fun ActiveChallengeCard(
     challenge: ChallengeEntity,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    onToggleFavorite: () -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val accent = c.categoryColors(challenge.category)
@@ -901,17 +1075,25 @@ private fun ActiveChallengeCard(
     PlantCard(
         modifier = modifier.fillMaxWidth(),
         onClick = onClick,
+        onLongClick = onLongClick,
         contentPadding = 16.dp
     ) {
         rememberBannerSource(challenge)?.let { banner ->
-            ChallengeBannerImage(
-                source = banner,
-                contentDescription = "${challenge.title} banner",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(AppShapes.medium)
-            )
+            Box {
+                ChallengeBannerImage(
+                    source = banner,
+                    contentDescription = "${challenge.title} banner",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(AppShapes.medium)
+                )
+                FavoriteStar(
+                    favorite = challenge.isFavorite,
+                    onToggle = onToggleFavorite,
+                    modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                )
+            }
             Spacer(Modifier.height(14.dp))
         }
         Row(

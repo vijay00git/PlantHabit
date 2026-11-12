@@ -370,6 +370,41 @@ class HabitRepository(
         PlantHabitWidget.refresh(context)
     }
 
+    suspend fun setChallengeFavorite(challengeId: String, favorite: Boolean) {
+        val ch = habitDao.getChallengeById(challengeId) ?: return
+        habitDao.updateChallenge(ch.copy(isFavorite = favorite))
+    }
+
+    suspend fun setChallengeGroup(challengeId: String, group: String) {
+        val ch = habitDao.getChallengeById(challengeId) ?: return
+        habitDao.updateChallenge(ch.copy(groupName = group.trim()))
+    }
+
+    /**
+     * Removes a challenge. Built-in ones are hidden (they'd be re-added on sync); imported ones
+     * are deleted with their banner photo. Either way, if joined, its habits are removed first.
+     * Returns true if it was deleted, false if hidden.
+     */
+    suspend fun deleteChallenge(challengeId: String): Boolean {
+        val ch = habitDao.getChallengeById(challengeId) ?: return false
+        if (ch.isJoined) leaveChallenge(challengeId)
+        return if (com.example.data.local.BuiltInChallenges.isBuiltIn(challengeId)) {
+            habitDao.updateChallenge(
+                (habitDao.getChallengeById(challengeId) ?: ch).copy(isHidden = true, isFavorite = false)
+            )
+            false
+        } else {
+            com.example.data.local.BannerStorage.delete(context, ch.bannerResName)
+            habitDao.deleteChallenge(challengeId)
+            true
+        }
+    }
+
+    suspend fun unhideChallenge(challengeId: String) {
+        val ch = habitDao.getChallengeById(challengeId) ?: return
+        habitDao.updateChallenge(ch.copy(isHidden = false))
+    }
+
     /** Counts the completion and starts the same challenge again from day 1 (habits stay). */
     suspend fun restartChallenge(challengeId: String) {
         val challenge = habitDao.getChallengeById(challengeId) ?: return

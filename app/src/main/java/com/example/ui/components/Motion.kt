@@ -198,10 +198,14 @@ fun PlantCard(
     brush: Brush? = null,
     borderColor: Color = PlantTheme.colors.border,
     contentPadding: Dp = 16.dp,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val base = modifier
-        .then(if (onClick != null) Modifier.bounceClick(pressedScale = 0.98f, onClick = onClick) else Modifier)
+        .then(
+            if (onClick != null) Modifier.bounceClick(pressedScale = 0.98f, onLongClick = onLongClick, onClick = onClick)
+            else Modifier
+        )
         .clip(shape)
         .then(if (brush != null) Modifier.background(brush) else Modifier.background(containerColor))
         .border(1.dp, borderColor, shape)

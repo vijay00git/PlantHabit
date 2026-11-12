@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
         ChallengeEntity::class,
         MoodLogEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class SproutDatabase : RoomDatabase() {
@@ -38,7 +38,7 @@ abstract class SproutDatabase : RoomDatabase() {
                     SproutDatabase::class.java,
                     "sprout_habit_database"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     // Only the very first prototype schema (v1) may be rebuilt; every later
                     // version must ship a Migration so user data is never silently wiped.
                     .fallbackToDestructiveMigrationFrom(true, 1)
@@ -62,6 +62,15 @@ abstract class SproutDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE habit_logs ADD COLUMN previousProgress INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE challenges ADD COLUMN timesCompleted INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /** v5: favourite, custom group and hidden flags for challenges. Keeps all user data. */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE challenges ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE challenges ADD COLUMN groupName TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE challenges ADD COLUMN isHidden INTEGER NOT NULL DEFAULT 0")
             }
         }
 

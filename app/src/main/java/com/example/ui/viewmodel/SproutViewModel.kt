@@ -253,6 +253,46 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun setChallengeFavorite(challengeId: String, favorite: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setChallengeFavorite(challengeId, favorite)
+            selectedChallengeForDetails.value?.takeIf { it.id == challengeId }?.let {
+                selectedChallengeForDetails.value = it.copy(isFavorite = favorite)
+            }
+        }
+    }
+
+    fun setChallengeGroup(challengeId: String, group: String) {
+        viewModelScope.launch(Dispatchers.IO) { repository.setChallengeGroup(challengeId, group) }
+    }
+
+    /** Deletes (imported) or hides (built-in) a challenge; reports which happened. */
+    fun deleteChallenge(challenge: ChallengeEntity, onDone: (String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val deleted = repository.deleteChallenge(challenge.id)
+            closeChallengeDetails()
+            refreshAnalytics()
+            onDone(if (deleted) "Deleted '${challenge.title}'" else "Hid '${challenge.title}' — restore it from Hidden challenges")
+        }
+    }
+
+    fun unhideChallenge(challengeId: String) {
+        viewModelScope.launch(Dispatchers.IO) { repository.unhideChallenge(challengeId) }
+    }
+
+    /** The challenge in the same JSON format the importer reads, for sharing. */
+    fun challengeAsJson(challenge: ChallengeEntity): String {
+        val habits = challenge.getParsedTasks().map { t ->
+            HabitEntity(
+                title = t.title, description = t.description, category = challenge.category,
+                timeOfDay = t.timeOfDay, scheduledTime = t.scheduledTime, targetValue = t.targetValue,
+                unit = t.unit, iconName = t.iconName, reminderEnabled = t.reminderEnabled,
+                reminderTime = t.reminderTime, syncWithGoogleCalendar = t.syncWithGoogleCalendar
+            )
+        }
+        return com.example.data.repository.ChallengeJsonManager.exportChallengeJson(challenge, habits)
+    }
+
     fun restartChallenge(challengeId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.restartChallenge(challengeId)

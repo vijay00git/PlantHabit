@@ -114,7 +114,15 @@ data class ChallengeEntity(
     val icon: String = "",
     /** How many times the user has finished this challenge. */
     @ColumnInfo(defaultValue = "0")
-    val timesCompleted: Int = 0
+    val timesCompleted: Int = 0,
+    @ColumnInfo(defaultValue = "0")
+    val isFavorite: Boolean = false,
+    /** User's own group ("My groups"); blank = ungrouped. */
+    @ColumnInfo(defaultValue = "")
+    val groupName: String = "",
+    /** Built-in challenges can't be deleted (they'd come back on sync), so they're hidden. */
+    @ColumnInfo(defaultValue = "0")
+    val isHidden: Boolean = false
 ) {
     fun getParsedTasks(): List<ChallengeTaskItem> {
         val list = mutableListOf<ChallengeTaskItem>()
