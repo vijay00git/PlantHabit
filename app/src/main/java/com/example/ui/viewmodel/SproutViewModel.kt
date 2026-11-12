@@ -1,5 +1,6 @@
 package com.example.ui.viewmodel
 
+import kotlinx.coroutines.flow.map
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -585,8 +586,21 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
     fun refreshAnalytics() {
         viewModelScope.launch(Dispatchers.IO) {
             _analyticsData.value = repository.getDeepAnalytics()
+            // Badges: queue any newly earned ones for the celebration popup
+            if (onboardingDone.value) {
+                val fresh = com.example.data.repository.Achievements.evaluate(db.habitDao())
+                if (fresh.isNotEmpty()) newAchievements.value = newAchievements.value + fresh
+            }
         }
     }
+
+    /** Achievements earned but not yet celebrated on screen. */
+    val newAchievements = MutableStateFlow<List<com.example.data.repository.Achievement>>(emptyList())
+    val unlockedAchievements: StateFlow<Map<String, Long>> = db.habitDao().getAchievementsFlow()
+        .map { list -> list.associate { it.id to it.unlockedAt } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    fun dismissAchievements() { newAchievements.value = emptyList() }
 
     fun setThemeMode(mode: String) {
         viewModelScope.launch(Dispatchers.IO) {

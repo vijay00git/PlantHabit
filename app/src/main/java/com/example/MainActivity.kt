@@ -114,6 +114,8 @@ fun SproutApp(viewModel: SproutViewModel) {
     val detailsHabit by viewModel.habitDetails.collectAsState()
     val todayLayout by viewModel.todayLayout.collectAsState()
     val timerHabit by viewModel.timerHabit.collectAsState()
+    val newAchievements by viewModel.newAchievements.collectAsState()
+    val unlockedAchievements by viewModel.unlockedAchievements.collectAsState()
     val archivedHabits by viewModel.archivedHabits.collectAsState()
     val calendars by viewModel.calendars.collectAsState()
     val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
@@ -341,7 +343,8 @@ fun SproutApp(viewModel: SproutViewModel) {
                         logs = allLogs,
                         onOpenSettings = { viewModel.isSettingsOpen.value = true },
                         onOpenHabit = { viewModel.habitDetails.value = it },
-                        moods = moodLogs
+                        moods = moodLogs,
+                        unlockedAchievements = unlockedAchievements
                     )
                 }
 
@@ -449,6 +452,14 @@ fun SproutApp(viewModel: SproutViewModel) {
                     activeHabits = habitsWithStatus.filter { !it.isCompleted },
                     onCompleteHabit = { viewModel.toggleHabitCompleted(it.habit) },
                     onDismiss = { viewModel.isFocusModeOpen.value = false }
+                )
+            }
+
+            // Newly earned badges
+            if (newAchievements.isNotEmpty()) {
+                com.example.ui.components.AchievementUnlockedDialog(
+                    achievements = newAchievements,
+                    onDismiss = { viewModel.dismissAchievements() }
                 )
             }
 

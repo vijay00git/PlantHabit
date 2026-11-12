@@ -99,6 +99,7 @@ fun AnalyticsScreen(
     logs: List<HabitLogEntity> = emptyList(),
     onOpenHabit: (HabitEntity) -> Unit = {},
     moods: List<com.example.data.model.MoodLogEntity> = emptyList(),
+    unlockedAchievements: Map<String, Long> = emptyMap(),
 ) {
     val c = PlantTheme.colors
     // Shown for the moment before real analytics load
@@ -192,6 +193,19 @@ fun AnalyticsScreen(
                     contentPadding = 16.dp
                 ) {
                     HabitHeatmaps(habits = habits, logs = logs, onOpenHabit = onOpenHabit)
+                }
+            }
+
+            // Achievements
+            item(key = "achievements") {
+                PlantCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .staggeredEntrance(2),
+                    contentPadding = 16.dp
+                ) {
+                    com.example.ui.components.AchievementsGrid(unlocked = unlockedAchievements)
                 }
             }
 
