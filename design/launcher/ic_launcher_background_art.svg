@@ -1,0 +1,15 @@
+<!-- PlantHabit adaptive icon background: 432x432 green to mint gradient -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 432 432" width="432" height="432">
+  <defs>
+    <linearGradient id="bgl" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#4ADE80"/><stop offset="1" stop-color="#1FA65A"/>
+    </linearGradient>
+    <radialGradient id="bgr" cx="0.5" cy="0.42" r="0.5">
+      <stop offset="0" stop-color="#D9F4E1" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#A8ECC0" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#4ADE80" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="432" height="432" fill="url(#bgl)"/>
+  <circle cx="216" cy="200" r="220" fill="url(#bgr)"/>
+</svg>

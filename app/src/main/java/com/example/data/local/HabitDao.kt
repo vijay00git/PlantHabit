@@ -15,11 +15,27 @@ import kotlinx.coroutines.flow.Flow
 interface HabitDao {
 
     // Habits
-    @Query("SELECT * FROM habits WHERE isArchived = 0 ORDER BY scheduledTime ASC")
+    @Query("SELECT * FROM habits WHERE isArchived = 0 ORDER BY sortOrder ASC, scheduledTime ASC")
     fun getAllHabitsFlow(): Flow<List<HabitEntity>>
 
-    @Query("SELECT * FROM habits WHERE isArchived = 0 ORDER BY scheduledTime ASC")
+    @Query("SELECT * FROM habits WHERE isArchived = 0 ORDER BY sortOrder ASC, scheduledTime ASC")
     suspend fun getAllHabitsList(): List<HabitEntity>
+
+    @Query("SELECT * FROM habits WHERE isArchived = 1 ORDER BY title")
+    fun getArchivedHabitsFlow(): Flow<List<HabitEntity>>
+
+    // Achievements
+    @Query("SELECT * FROM achievements")
+    fun getAchievementsFlow(): Flow<List<com.example.data.model.AchievementEntity>>
+
+    @Query("SELECT * FROM achievements")
+    suspend fun getAchievements(): List<com.example.data.model.AchievementEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAchievement(a: com.example.data.model.AchievementEntity)
+
+    @Query("DELETE FROM achievements")
+    suspend fun deleteAllAchievements()
 
     @Query("SELECT * FROM habits WHERE id = :id")
     suspend fun getHabitById(id: Long): HabitEntity?

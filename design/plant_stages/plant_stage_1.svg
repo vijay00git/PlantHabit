@@ -1,0 +1,41 @@
+<!-- PlantHabit plant stage 1: thriving_sprout (600x600, transparent) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <defs>
+    <linearGradient id="gL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6BEA98"/><stop offset="0.55" stop-color="#4ADE80"/><stop offset="1" stop-color="#1FA65A"/>
+    </linearGradient>
+    <linearGradient id="gM" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3CCB70"/><stop offset="1" stop-color="#1A9A52"/>
+    </linearGradient>
+    <linearGradient id="gD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1FA65A"/><stop offset="1" stop-color="#13803F"/>
+    </linearGradient>
+    <linearGradient id="gG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE68A"/><stop offset="0.5" stop-color="#FACC32"/><stop offset="1" stop-color="#F2A80F"/>
+    </linearGradient>
+    <linearGradient id="gGD" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7B92A"/><stop offset="1" stop-color="#D98A0A"/>
+    </linearGradient>
+    <linearGradient id="pot" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E88A5C"/><stop offset="0.55" stop-color="#E07B4C"/><stop offset="1" stop-color="#C8693F"/>
+    </linearGradient>
+    <linearGradient id="potShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7A3A1E" stop-opacity="0.28"/><stop offset="1" stop-color="#7A3A1E" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F09666"/><stop offset="0.55" stop-color="#E88458"/><stop offset="1" stop-color="#D2714A"/>
+    </linearGradient>
+    <radialGradient id="soil" cx="0.5" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#7A523A"/><stop offset="1" stop-color="#5A3B2A"/>
+    </radialGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#A06A44"/><stop offset="1" stop-color="#6E4329"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFE9A3" stop-opacity="0.85"/>
+      <stop offset="0.5" stop-color="#FACC32" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FACC32" stop-opacity="0"/>
+    </radialGradient>
+    <path id="sp" d="M0,-10 C1,-2 2,-1 10,0 C2,1 1,2 0,10 C-1,2 -2,1 -10,0 C-2,-1 -1,-2 0,-10Z"/>
+  </defs>
+<ellipse cx="300" cy="530" rx="118" ry="11" fill="#5A3B2A" opacity="0.16"/><path d="M206,398 H394 L376,512 C374,522 366,528 356,528 H244 C234,528 226,522 224,512Z" fill="url(#pot)"/><path d="M206,398 H394 L391,418 H209Z" fill="url(#potShade)"/><path d="M228,412 L238,500 C239,508 233,510 232,502 L220,412Z" fill="#FFFFFF" opacity="0.22"/><rect x="186" y="362" width="228" height="42" rx="12" fill="url(#rim)"/><rect x="196" y="370" width="10" height="26" rx="5" fill="#FFFFFF" opacity="0.25"/><ellipse cx="300" cy="364" rx="112" ry="15" fill="#B85E36"/><ellipse cx="300" cy="366" rx="102" ry="12" fill="url(#soil)"/><g fill="#4A2F20" opacity="0.6"><circle cx="252" cy="368" r="3"/><circle cx="338" cy="364" r="2.5"/><circle cx="280" cy="372" r="2"/><circle cx="358" cy="371" r="2"/></g><g id="plant"><path d="M300,372 C300,320 284,280 298,222" fill="none" stroke="#1C9A52" stroke-width="10" stroke-linecap="round"/><path d="M300,372 C300,320 284,280 298,222" fill="none" stroke="#4ADE80" stroke-width="3" stroke-linecap="round" opacity="0.55" transform="translate(-2.2 0)"/><g transform="translate(297.7 334.8) rotate(-166.1)"><path d="M0,0 C14.5,-25.2 44.9,-26.4 66,0 C46.2,20.4 17.2,22.8 0,0Z" fill="url(#gM)"/><path d="M4,0 Q33,-2.9 56.8,0" fill="none" stroke="#13803F" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/></g><g transform="translate(296.6 324.8) rotate(-28.7)"><path d="M0,0 C15.4,-26.2 47.6,-27.5 70,0 C49,21.2 18.2,23.8 0,0Z" fill="url(#gM)"/><path d="M4.2,0 Q35,-3 60.2,0" fill="none" stroke="#13803F" stroke-width="2.7" stroke-linecap="round" opacity="0.45"/></g><g transform="translate(292.5 282) rotate(-152.5)"><path d="M0,0 C13.6,-24.2 42.2,-25.3 62,0 C43.4,19.6 16.1,21.8 0,0Z" fill="url(#gL)"/><path d="M3.7,0 Q31,-2.8 53.3,0" fill="none" stroke="#13803F" stroke-width="2.4" stroke-linecap="round" opacity="0.45"/></g><g transform="translate(292.3 270.1) rotate(-31.8)"><path d="M0,0 C14.5,-25.2 44.9,-26.4 66,0 C46.2,20.4 17.2,22.8 0,0Z" fill="url(#gL)"/><path d="M4,0 Q33,-2.9 56.8,0" fill="none" stroke="#13803F" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/></g><g transform="translate(298 226) rotate(-96)"><path d="M0,0 C12.3,-22.1 38.1,-23.1 56,0 C39.2,17.8 14.6,19.9 0,0Z" fill="url(#gL)"/><path d="M3.4,0 Q28,-2.5 48.2,0" fill="none" stroke="#13803F" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/></g></g><path d="M188,366 C230,384 370,384 412,366" fill="none" stroke="#F4A274" stroke-width="3" opacity="0.7"/></svg>

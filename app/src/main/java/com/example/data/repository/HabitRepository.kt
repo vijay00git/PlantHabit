@@ -170,6 +170,7 @@ class HabitRepository(
         habitDao.deleteAllLogs()
         habitDao.deleteAllHabits()
         habitDao.deleteAllMoodLogs()
+        habitDao.deleteAllAchievements()
         habitDao.resetAllChallengeProgress()
         PlantHabitWidget.refresh(context)
     }

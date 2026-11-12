@@ -55,6 +55,7 @@ object BackupManager {
             put("moods", JSONArray(moods.map { it.toJson() }))
             put("challenges", JSONArray(challenges.map { it.toJson() }))
             put("banners", banners)
+            put("achievements", JSONArray(dao.getAchievements().map { JSONObject().put("id", it.id).put("unlockedAt", it.unlockedAt) }))
         }
         out.bufferedWriter().use { it.write(root.toString()) }
         return Summary(root.getLong("exportedAt"), habits.size, logs.count { it.isCompleted }, moods.size, challenges.size, banners.length())
@@ -119,6 +120,10 @@ object BackupManager {
             logs.forEach { dao.insertOrUpdateLog(it) }
             moods.forEach { dao.insertMoodLog(it) }
             dao.insertChallenges(challenges)
+            dao.deleteAllAchievements()
+            root.optJSONArray("achievements").objects().forEach {
+                dao.insertAchievement(com.example.data.model.AchievementEntity(it.getString("id"), it.optLong("unlockedAt")))
+            }
         }
         // Built-in challenges missing from an older backup come back automatically
         BuiltInChallenges.sync(dao)
@@ -139,6 +144,7 @@ object BackupManager {
         put("routineGroup", routineGroup ?: JSONObject.NULL); put("challengeId", challengeId ?: JSONObject.NULL)
         put("reminderEnabled", reminderEnabled); put("reminderTime", reminderTime); put("reminderDays", reminderDays)
         put("syncWithGoogleCalendar", syncWithGoogleCalendar); put("isArchived", isArchived); put("createdAt", createdAt)
+        put("sortOrder", sortOrder); put("timesPerWeek", timesPerWeek); put("extraReminderTimes", extraReminderTimes)
     }
 
     private fun habitFromJson(o: JSONObject) = HabitEntity(
@@ -161,12 +167,15 @@ object BackupManager {
         calendarEventId = null,
         isArchived = o.optBoolean("isArchived", false),
         createdAt = o.optLong("createdAt", System.currentTimeMillis()),
+        sortOrder = o.optInt("sortOrder"),
+        timesPerWeek = o.optInt("timesPerWeek"),
+        extraReminderTimes = o.optString("extraReminderTimes"),
     )
 
     private fun HabitLogEntity.toJson() = JSONObject().apply {
         put("habitId", habitId); put("date", date); put("progressValue", progressValue)
         put("isCompleted", isCompleted); put("completedAt", completedAt ?: JSONObject.NULL)
-        put("notes", notes ?: JSONObject.NULL); put("previousProgress", previousProgress)
+        put("notes", notes ?: JSONObject.NULL); put("previousProgress", previousProgress); put("isSkipped", isSkipped)
     }
 
     private fun logFromJson(o: JSONObject) = HabitLogEntity(
@@ -177,6 +186,7 @@ object BackupManager {
         completedAt = o.optLongOrNull("completedAt"),
         notes = o.optStringOrNull("notes"),
         previousProgress = o.optInt("previousProgress"),
+        isSkipped = o.optBoolean("isSkipped"),
     )
 
     private fun MoodLogEntity.toJson() = JSONObject().apply {

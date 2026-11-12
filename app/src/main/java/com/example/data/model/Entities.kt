@@ -28,7 +28,16 @@ data class HabitEntity(
     val syncWithGoogleCalendar: Boolean = false,
     val calendarEventId: Long? = null,
     val isArchived: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    /** Manual order on Today (lower first); ties fall back to scheduled time. */
+    @ColumnInfo(defaultValue = "0")
+    val sortOrder: Int = 0,
+    /** >0 = flexible "N times per week" goal on any days (reminderDays then lists allowed days). */
+    @ColumnInfo(defaultValue = "0")
+    val timesPerWeek: Int = 0,
+    /** Additional daily reminder times, comma-separated "HH:mm". */
+    @ColumnInfo(defaultValue = "")
+    val extraReminderTimes: String = ""
 )
 
 /** Days of week this habit runs on (java.util.Calendar.DAY_OF_WEEK: 1 = Sunday … 7 = Saturday). */
@@ -69,7 +78,17 @@ data class HabitLogEntity(
     val notes: String? = null,
     /** Progress just before the habit was completed, restored if the user un-ticks it. */
     @ColumnInfo(defaultValue = "0")
-    val previousProgress: Int = 0
+    val previousProgress: Int = 0,
+    /** A "streak freeze": the day doesn't count as done, but doesn't break the streak. */
+    @ColumnInfo(defaultValue = "0")
+    val isSkipped: Boolean = false
+)
+
+/** An unlocked achievement (definitions live in code; see Achievements). */
+@Entity(tableName = "achievements")
+data class AchievementEntity(
+    @PrimaryKey val id: String,
+    val unlockedAt: Long
 )
 
 data class ChallengeTaskItem(

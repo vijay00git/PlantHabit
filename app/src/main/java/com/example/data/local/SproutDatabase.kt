@@ -10,6 +10,7 @@ import com.example.data.model.ChallengeEntity
 import com.example.data.model.HabitEntity
 import com.example.data.model.HabitLogEntity
 import com.example.data.model.MoodLogEntity
+import com.example.data.model.AchievementEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,9 +20,10 @@ import kotlinx.coroutines.launch
         HabitEntity::class,
         HabitLogEntity::class,
         ChallengeEntity::class,
-        MoodLogEntity::class
+        MoodLogEntity::class,
+        AchievementEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class SproutDatabase : RoomDatabase() {
@@ -38,7 +40,7 @@ abstract class SproutDatabase : RoomDatabase() {
                     SproutDatabase::class.java,
                     "sprout_habit_database"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     // Only the very first prototype schema (v1) may be rebuilt; every later
                     // version must ship a Migration so user data is never silently wiped.
                     .fallbackToDestructiveMigrationFrom(true, 1)
@@ -71,6 +73,17 @@ abstract class SproutDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE challenges ADD COLUMN isFavorite INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE challenges ADD COLUMN groupName TEXT NOT NULL DEFAULT ''")
                 db.execSQL("ALTER TABLE challenges ADD COLUMN isHidden INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /** v6: habit order, weekly goals, extra reminders, skip days, achievements. */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE habits ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE habits ADD COLUMN timesPerWeek INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE habits ADD COLUMN extraReminderTimes TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE habit_logs ADD COLUMN isSkipped INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `achievements` (`id` TEXT NOT NULL, `unlockedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
             }
         }
 
