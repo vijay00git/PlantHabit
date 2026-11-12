@@ -262,6 +262,16 @@ class SproutViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    val archivedHabits: StateFlow<List<HabitEntity>> = repository.archivedHabitsFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setHabitArchived(habitId: Long, archived: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.setHabitArchived(habitId, archived)
+            refreshAnalytics()
+        }
+    }
+
     fun restoreHabit(snapshot: HabitRepository.HabitSnapshot) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.restoreHabit(snapshot)

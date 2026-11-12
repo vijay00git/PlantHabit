@@ -113,6 +113,7 @@ fun SproutApp(viewModel: SproutViewModel) {
     val editingHabit by viewModel.editingHabit.collectAsState()
     val detailsHabit by viewModel.habitDetails.collectAsState()
     val todayLayout by viewModel.todayLayout.collectAsState()
+    val archivedHabits by viewModel.archivedHabits.collectAsState()
     val calendars by viewModel.calendars.collectAsState()
     val shownCalendarIds by viewModel.shownCalendarIds.collectAsState()
     val targetCalendarId by viewModel.targetCalendarId.collectAsState()
@@ -469,7 +470,18 @@ fun SproutApp(viewModel: SproutViewModel) {
                             viewModel.habitDetails.value = null
                             viewModel.editingHabit.value = habit
                         },
-                        onDismiss = { viewModel.habitDetails.value = null }
+                        onDismiss = { viewModel.habitDetails.value = null },
+                        onArchive = {
+                            viewModel.habitDetails.value = null
+                            viewModel.setHabitArchived(habit.id, true)
+                            coroutineScope.launch {
+                                val result = snackbarHostState.showSnackbar(
+                                    "Archived '${habit.title}' — find it in Settings", actionLabel = "Undo",
+                                    duration = androidx.compose.material3.SnackbarDuration.Long
+                                )
+                                if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) viewModel.setHabitArchived(habit.id, false)
+                            }
+                        }
                     )
                 }
             }
@@ -598,6 +610,11 @@ fun SproutApp(viewModel: SproutViewModel) {
                     onBackup = {
                         val stamp = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
                         backupLauncher.launch("PlantHabit-backup-$stamp.json")
+                    },
+                    archivedHabits = archivedHabits,
+                    onUnarchive = { h ->
+                        viewModel.setHabitArchived(h.id, false)
+                        coroutineScope.launch { snackbarHostState.showSnackbar("'${h.title}' is back on Today 🌱") }
                     },
                     onRestore = { restoreLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
                     onClearAllData = { removeEvents ->

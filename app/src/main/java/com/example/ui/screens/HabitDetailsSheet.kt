@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -82,6 +83,7 @@ fun HabitDetailsSheet(
     onToggleDate: (date: String) -> Unit,
     onEdit: () -> Unit,
     onDismiss: () -> Unit,
+    onArchive: () -> Unit = {},
 ) {
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
@@ -147,6 +149,10 @@ fun HabitDetailsSheet(
                         color = c.textSecondary
                     )
                 }
+                HeaderButton(Icons.Default.Archive, "Archive habit", c.sunSoft, c.sun, Modifier.testTag("btn_archive_habit")) {
+                    onArchive()
+                }
+                Spacer(Modifier.width(8.dp))
                 HeaderButton(Icons.Default.Edit, "Edit habit", c.primarySoft, c.primary, Modifier.testTag("btn_edit_habit")) {
                     onEdit()
                 }

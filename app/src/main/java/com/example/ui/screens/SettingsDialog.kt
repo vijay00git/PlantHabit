@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.ui.graphics.graphicsLayer
@@ -102,7 +103,40 @@ fun SettingsDialog(
     onSaveCalendarChoice: (shown: Set<Long>?, target: Long?) -> Unit = { _, _ -> },
     onBackup: () -> Unit = {},
     onRestore: () -> Unit = {},
+    archivedHabits: List<com.example.data.model.HabitEntity> = emptyList(),
+    onUnarchive: (com.example.data.model.HabitEntity) -> Unit = {},
 ) {
+    var showArchived by remember { mutableStateOf(false) }
+    if (showArchived) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showArchived = false },
+            containerColor = PlantTheme.colors.surface,
+            shape = AppShapes.xl,
+            title = { Text("Archived habits", style = MaterialTheme.typography.titleLarge, color = PlantTheme.colors.textPrimary) },
+            text = {
+                if (archivedHabits.isEmpty()) {
+                    Text("Nothing archived. Archive a habit from its details to pause it without losing its history.",
+                        style = MaterialTheme.typography.bodyMedium, color = PlantTheme.colors.textSecondary)
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(archivedHabits, key = { it.id }) { h ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(h.title, style = MaterialTheme.typography.bodyMedium, color = PlantTheme.colors.textPrimary, modifier = Modifier.weight(1f))
+                                TextButton(onClick = { onUnarchive(h) }, modifier = Modifier.testTag("unarchive_${h.id}")) {
+                                    Text("Restore", style = MaterialTheme.typography.labelLarge, color = PlantTheme.colors.primary)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showArchived = false }) {
+                    Text("Done", style = MaterialTheme.typography.labelLarge, color = PlantTheme.colors.primary)
+                }
+            }
+        )
+    }
     val c = PlantTheme.colors
     val haptics = rememberHaptics()
     var confirmClear by remember { mutableStateOf(false) }
@@ -293,6 +327,15 @@ fun SettingsDialog(
                             onClick = onRestore
                         )
                     }
+                    Spacer(Modifier.height(10.dp))
+                    SettingsActionButton(
+                        text = "Archived habits (${archivedHabits.size})",
+                        icon = Icons.Default.Archive,
+                        container = c.sunSoft,
+                        content = c.sun,
+                        modifier = Modifier.testTag("btn_archived_habits"),
+                        onClick = { showArchived = true }
+                    )
                     Spacer(Modifier.height(18.dp))
                     SettingsRowHeader(
                         icon = Icons.Default.DeleteSweep,

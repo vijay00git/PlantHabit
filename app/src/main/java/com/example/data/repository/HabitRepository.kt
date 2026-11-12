@@ -309,6 +309,21 @@ class HabitRepository(
         PlantHabitWidget.refresh(context)
     }
 
+    /** Pauses a habit: hidden from Today, no reminders or calendar event, history kept. */
+    suspend fun setHabitArchived(habitId: Long, archived: Boolean) {
+        val habit = habitDao.getHabitById(habitId) ?: return
+        if (archived) {
+            ReminderScheduler.cancelHabitReminder(context, habit.id)
+            CalendarSyncManager.deleteHabitEvent(context, habit.calendarEventId)
+            habitDao.updateHabit(habit.copy(isArchived = true, calendarEventId = null))
+            PlantHabitWidget.refresh(context)
+        } else {
+            updateHabit(habit.copy(isArchived = false))
+        }
+    }
+
+    val archivedHabitsFlow: Flow<List<HabitEntity>> = habitDao.getArchivedHabitsFlow()
+
     suspend fun deleteHabit(habitId: Long) {
         ReminderScheduler.cancelHabitReminder(context, habitId)
         CalendarSyncManager.deleteHabitEvent(context, habitDao.getHabitById(habitId)?.calendarEventId)
